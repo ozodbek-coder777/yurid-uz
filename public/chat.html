@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini AI Chat - O'zbekcha Sun'iy Intellekt</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter and Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://generativelanguage.googleapis.com https://*.googleapis.com; frame-src 'self';" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f4ff',
+              100: '#d9e2ff',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            },
+            darkBg: '#080C14',
+            darkCard: '#0F1626',
+            darkBorder: '#1F293D',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #080C14;
+      font-family: 'Inter', sans-serif;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0F1626;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1F293D;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #3b82f6;
+    }
+
+    /* Jumping Dots Animation */
+    .dot-flashing {
+      position: relative;
+      width: 6px;
+      height: 6px;
+      border-radius: 5px;
+      background-color: #3b82f6;
+      color: #3b82f6;
+      animation: dot-flashing 1s infinite linear alternate;
+      animation-delay: .5s;
+    }
+    .dot-flashing::before, .dot-flashing::after {
+      content: '';
+      display: inline-block;
+      position: absolute;
+      top: 0;
+    }
+    .dot-flashing::before {
+      left: -12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 5px;
+      background-color: #3b82f6;
+      color: #3b82f6;
+      animation: dot-flashing 1s infinite linear alternate;
+      animation-delay: 0s;
+    }
+    .dot-flashing::after {
+      left: 12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 5px;
+      background-color: #3b82f6;
+      color: #3b82f6;
+      animation: dot-flashing 1s infinite linear alternate;
+      animation-delay: 1s;
+    }
+    @keyframes dot-flashing {
+      0% { background-color: #3b82f6; }
+      50%, 100% { background-color: rgba(59, 130, 246, 0.2); }
+    }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100 flex flex-col">
+
+  <!-- Main Container -->
+  <div class="flex-1 flex flex-col max-w-5xl w-full mx-auto p-3 sm:p-4 md:p-6 h-screen max-h-screen overflow-hidden">
+    
+    <!-- Top Nav Header -->
+    <header class="flex items-center justify-between bg-[#0F1626]/80 backdrop-blur-md border border-[#1F293D] rounded-2xl px-5 py-4 mb-4 shadow-xl">
+      <div class="flex items-center gap-3">
+        <!-- Logo / Icon -->
+        <div class="w-10 h-10 rounded-xl bg-blue-600/15 flex items-center justify-center border border-blue-500/30 text-blue-400 shadow-inner">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-display font-bold text-white text-base md:text-lg tracking-tight flex items-center gap-2">
+            Gemini AI Chatbot
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 animate-pulse">
+              Onlayn
+            </span>
+          </h1>
+          <p class="text-xs text-gray-400">Gemini 2.5 Flash tomonidan taqdim etilgan o'zbekcha yordamchi</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Right Menu -->
+      <div class="flex items-center gap-2">
+        <button 
+          id="clearChatBtn" 
+          class="px-3 py-1.5 rounded-lg bg-[#161F30] hover:bg-rose-950/40 text-gray-400 hover:text-rose-400 border border-[#1F293D] hover:border-rose-900/30 text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+          title="Suhbatni tozalash"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+          <span class="hidden sm:inline">Tozalash</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mid Section: Messages & Suggestions Side-by-Side -->
+    <div class="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden relative min-h-0">
+      
+      <!-- Side Suggestion Cards - hidden on small mobile, shows on desktop -->
+      <aside class="w-full md:w-72 flex flex-col gap-3 shrink-0 hidden md:flex">
+        
+        <!-- App Info Card -->
+        <div class="bg-[#0F1626] border border-[#1F293D] rounded-2xl p-4 shadow-lg">
+          <h2 class="font-display font-semibold text-white text-xs uppercase tracking-wider mb-2.5 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Tizim Ma'lumoti
+          </h2>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Ushbu chat tizimi to'g'ridan-to'g'ri Google Gemini API xizmatiga ulanadi. Hech qanday server yoki murakkab texnologiyalar talab etilmaydi - barchasi brauzerning o'zida ishlaydi.
+          </p>
+          <div class="mt-3 pt-2.5 border-t border-[#1F293D] flex justify-between items-center text-[10px] text-gray-500 font-mono">
+            <span>Model:</span>
+            <span class="text-blue-400 font-semibold bg-blue-950/30 px-1.5 py-0.5 rounded border border-blue-900/30">gemini-2.5-flash</span>
+          </div>
+        </div>
+
+        <!-- Quick Starters -->
+        <div class="bg-[#0F1626] border border-[#1F293D] rounded-2xl p-4 shadow-lg flex-1 flex flex-col">
+          <h2 class="font-display font-semibold text-white text-xs uppercase tracking-wider mb-3 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Tezkor Savollar
+          </h2>
+          
+          <div class="space-y-2 overflow-y-auto flex-1 text-xs">
+            <button 
+              onclick="useQuickPrompt('Salom! O\'zingizni tanishtiring va qanday yordam bera olishingizni aytib bering.')"
+              class="w-full text-left p-2.5 rounded-xl bg-[#161F30] hover:bg-blue-600/10 border border-[#1F293D] hover:border-blue-500/30 text-gray-300 hover:text-white transition-all duration-150 cursor-pointer"
+            >
+              👋 O'zingizni tanishtiring
+            </button>
+            <button 
+              onclick="useQuickPrompt('O\'zbekiston bo\'ylab sayohat qilish uchun 3 kunlik eng yaxshi marshrut rejasini tuzib bering.')"
+              class="w-full text-left p-2.5 rounded-xl bg-[#161F30] hover:bg-blue-600/10 border border-[#1F293D] hover:border-blue-500/30 text-gray-300 hover:text-white transition-all duration-150 cursor-pointer"
+            >
+              🗺️ 3 kunlik sayohat rejasi
+            </button>
+            <button 
+              onclick="useQuickPrompt('Dasturlashni yangi boshlovchilar uchun eng muhim 5 ta oltin qoidani tushuntirib bering.')"
+              class="w-full text-left p-2.5 rounded-xl bg-[#161F30] hover:bg-blue-600/10 border border-[#1F293D] hover:border-blue-500/30 text-gray-300 hover:text-white transition-all duration-150 cursor-pointer"
+            >
+              💻 Dasturlashni o'rganish
+            </button>
+            <button 
+              onclick="useQuickPrompt('Nima uchun osmon ko\'k rangda ko\'rinadi? Sodda va tushunarli tilda ilmiy javob bering.')"
+              class="w-full text-left p-2.5 rounded-xl bg-[#161F30] hover:bg-blue-600/10 border border-[#1F293D] hover:border-blue-500/30 text-gray-300 hover:text-white transition-all duration-150 cursor-pointer"
+            >
+              ☀️ Osmon nega ko'k?
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Chat Screen Container -->
+      <main class="flex-1 flex flex-col bg-[#0F1626] border border-[#1F293D] rounded-2xl overflow-hidden shadow-2xl relative">
+        
+        <!-- Message list area -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          <!-- Initial Bot Welcome Message -->
+          <div class="flex items-start gap-3 max-w-[85%]">
+            <div class="w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div class="space-y-1">
+              <div class="bg-[#161F30] text-gray-200 text-sm py-3 px-4 rounded-2xl rounded-tl-none border border-[#1F293D] shadow-sm leading-relaxed">
+                Assalomu alaykum! Men Gemini sun'iy intellekt yordamchisiman. Bugun sizga qanday mavzuda yoki savollarda yordam bera olaman? Istalgan savolingizni yozib qoldirishingiz mumkin.
+              </div>
+              <span class="text-[10px] text-gray-500 ml-1 block" id="welcomeTime">hozir</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Quick Prompt Helper (only visible on mobile screens) -->
+        <div class="md:hidden flex gap-2 px-4 py-2 border-t border-[#1F293D]/60 overflow-x-auto bg-[#0C1220] shrink-0">
+          <button 
+            onclick="useQuickPrompt('Salom! O\'zingizni tanishtiring.')"
+            class="whitespace-nowrap px-3 py-1 rounded-full bg-[#161F30] border border-[#1F293D] text-xs text-gray-300"
+          >
+            👋 Tanishtiruv
+          </button>
+          <button 
+            onclick="useQuickPrompt('3 kunlik sayohat rejasi tuzib ber.')"
+            class="whitespace-nowrap px-3 py-1 rounded-full bg-[#161F30] border border-[#1F293D] text-xs text-gray-300"
+          >
+            🗺️ Sayohat rejasi
+          </button>
+          <button 
+            onclick="useQuickPrompt('Dasturlashni qanday o\'rganaman?')"
+            class="whitespace-nowrap px-3 py-1 rounded-full bg-[#161F30] border border-[#1F293D] text-xs text-gray-300"
+          >
+            💻 Dasturlash
+          </button>
+        </div>
+
+        <!-- Loading / Typing Indicator overlay -->
+        <div id="typingIndicator" class="hidden px-5 py-3.5 bg-[#0C1220]/90 border-t border-[#1F293D] flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-blue-400 font-semibold tracking-wide uppercase flex items-center gap-2">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></span>
+              Javob tayyorlanmoqda
+            </span>
+            <div class="flex items-center ml-1">
+              <div class="dot-flashing"></div>
+            </div>
+          </div>
+          <span class="text-[10px] text-gray-500 italic">Gemini o'ylamoqda...</span>
+        </div>
+
+        <!-- Sticky Bottom Input Form -->
+        <form id="chatForm" class="p-3 sm:p-4 bg-[#0C1220] border-t border-[#1F293D] flex gap-2 shrink-0">
+          <input 
+            type="text" 
+            id="userInput" 
+            autocomplete="off"
+            required
+            class="flex-1 bg-[#161F30] border border-[#1F293D] focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition-all"
+            placeholder="Istalgan savolingizni yozing..."
+          />
+          <button 
+            type="submit" 
+            id="sendBtn"
+            class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] disabled:bg-gray-800 disabled:text-gray-600 text-white px-4 rounded-xl transition-all shadow-md flex items-center justify-center cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </button>
+        </form>
+
+      </main>
+
+    </div>
+
+    <!-- Bottom Footer -->
+    <footer class="mt-4 text-center text-[10.5px] text-gray-500 border-t border-[#1F293D]/40 pt-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>
+        © 2026 Gemini AI Yordamchi. Barcha huquqlar himoyalangan.
+      </div>
+      <div class="font-mono text-[9px] bg-[#0F1626] px-3 py-1 rounded-md border border-[#1F293D] text-gray-400">
+        Xavfsiz API bog'lanishi faol: <span class="text-emerald-400 font-semibold">AIzaSyDI...7iYY</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Client-side Logic (Gemini API Integration) -->
+  <script>
+    // Config parameters
+    const API_KEY = "AIzaSyDICOB5U2BCMJlzpDzWnjXs0f5wg1-7iYY";
+    const MODEL_NAME = "gemini-2.5-flash";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+
+    // Elements
+    const chatMessages = document.getElementById('chatMessages');
+    const chatForm = document.getElementById('chatForm');
+    const userInput = document.getElementById('userInput');
+    const typingIndicator = document.getElementById('typingIndicator');
+    const clearChatBtn = document.getElementById('clearChatBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const welcomeTime = document.getElementById('welcomeTime');
+
+    // Chat memory
+    let chatHistory = [];
+
+    // Set welcome time to current hour
+    function updateWelcomeTime() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      welcomeTime.textContent = `${hh}:${mm}`;
+    }
+    updateWelcomeTime();
+
+    // Simple Markdown to HTML parser
+    function parseMarkdown(text) {
+      if (!text) return "";
+      
+      let html = text;
+      
+      // Escape HTML entities to prevent XSS but allow our custom markup
+      html = html
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Headers (### Header)
+      html = html.replace(/^### (.*?)$/gm, '<h4 class="text-sm font-bold text-white mt-3 mb-1.5">$1</h4>');
+      html = html.replace(/^## (.*?)$/gm, '<h3 class="text-base font-bold text-white mt-4 mb-2">$1</h3>');
+      html = html.replace(/^# (.*?)$/gm, '<h2 class="text-lg font-bold text-white mt-4 mb-2">$1</h2>');
+
+      // Bold (**text**)
+      html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-blue-300">$1</strong>');
+      
+      // Italic (*text*)
+      html = html.replace(/\*(.*?)\*/g, '<em class="italic text-gray-300">$1</em>');
+
+      // Inline code (`code`)
+      html = html.replace(/`(.*?)`/g, '<code class="bg-[#1C2538] text-amber-400 font-mono text-xs px-1.5 py-0.5 rounded border border-[#2E3C56]">$1</code>');
+
+      // Unordered List Items (- text or * text)
+      html = html.replace(/^\s*[-*]\s+(.*?)$/gm, '<li class="ml-4 list-disc text-xs sm:text-sm my-1">$1</li>');
+      
+      // Ordered List Items (1. text)
+      html = html.replace(/^\s*\d+\.\s+(.*?)$/gm, '<li class="ml-4 list-decimal text-xs sm:text-sm my-1">$1</li>');
+
+      // Convert line breaks to paragraphs/br
+      html = html.replace(/\n\n/g, '</p><p class="mt-2.5">');
+      html = html.replace(/\n/g, '<br>');
+
+      // Wrap in a single paragraph if it's not already structured
+      if (!html.startsWith('<h') && !html.startsWith('<li')) {
+        html = `<p>${html}</p>`;
+      }
+
+      return html;
+    }
+
+    // Scroll chat area to bottom
+    function scrollToBottom() {
+      chatMessages.scrollTo({
+        top: chatMessages.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    // Add a message bubble
+    function addMessage(text, isUser = false) {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const timeStr = `${hh}:${mm}`;
+
+      const messageWrapper = document.createElement('div');
+      messageWrapper.className = `flex items-start gap-3 max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : ''}`;
+
+      // Avatar Icon
+      const avatarHtml = isUser 
+        ? `<div class="w-8 h-8 rounded-lg bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+           </div>`
+        : `<div class="w-8 h-8 rounded-lg bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+           </div>`;
+
+      // Bubble Content
+      const parsedText = isUser ? `<span>${text}</span>` : parseMarkdown(text);
+      const bubbleClass = isUser 
+        ? 'bg-blue-600 text-white rounded-tr-none border border-blue-500' 
+        : 'bg-[#161F30] text-gray-200 rounded-tl-none border border-[#1F293D]';
+
+      const copyBtnHtml = !isUser 
+        ? `<button onclick="copyToClipboard(this)" class="absolute top-2 right-2 p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-white transition-all opacity-0 group-hover:opacity-100" title="Nusxa olish">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+           </button>`
+        : '';
+
+      messageWrapper.innerHTML = `
+        ${avatarHtml}
+        <div class="space-y-1 relative group flex-1">
+          <div class="text-sm py-3 px-4 rounded-2xl shadow-sm leading-relaxed pr-8 ${bubbleClass}">
+            ${parsedText}
+            ${copyBtnHtml}
+          </div>
+          <span class="text-[10px] text-gray-500 ${isUser ? 'text-right mr-1' : 'ml-1'} block">${timeStr}</span>
+        </div>
+      `;
+
+      chatMessages.appendChild(messageWrapper);
+      scrollToBottom();
+    }
+
+    // Copy response logic
+    window.copyToClipboard = function(btn) {
+      const parentBubble = btn.parentElement;
+      const textToCopy = parentBubble.innerText.trim();
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        // Change button icon briefly to checkmark
+        const originalIcon = btn.innerHTML;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
+        setTimeout(() => {
+          btn.innerHTML = originalIcon;
+        }, 1500);
+      }).catch(err => {
+        console.error("Failed to copy text:", err);
+      });
+    };
+
+    // Use Quick Starters
+    window.useQuickPrompt = function(promptText) {
+      userInput.value = promptText;
+      userInput.focus();
+    };
+
+    // Call Gemini API
+    async function fetchGeminiResponse(userPrompt) {
+      // Keep chat history updated in system formatting
+      chatHistory.push({
+        role: "user",
+        parts: [{ text: userPrompt }]
+      });
+
+      // Prepare request payload
+      const requestPayload = {
+        contents: chatHistory,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+        }
+      };
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (!response.ok) {
+        const errDetail = await response.json();
+        throw new Error(errDetail.error?.message || `API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!answer) {
+        throw new Error("API'dan bo'sh javob qaytdi.");
+      }
+
+      // Add to local chat memory
+      chatHistory.push({
+        role: "model",
+        parts: [{ text: answer }]
+      });
+
+      return answer;
+    }
+
+    // Form Submit Handler
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      // Disable UI elements
+      userInput.value = "";
+      userInput.disabled = true;
+      sendBtn.disabled = true;
+      typingIndicator.classList.remove('hidden');
+
+      // Add User Bubble
+      addMessage(message, true);
+
+      try {
+        const responseText = await fetchGeminiResponse(message);
+        // Add Bot response
+        addMessage(responseText, false);
+      } catch (err) {
+        console.error("Gemini connection error:", err);
+        addMessage(`Kechirasiz, xatolik yuz berdi. Bog'lanish holatini va API kalitni tekshirib ko'ring.\n\n*Batafsil xatolik:* ${err.message || err}`, false);
+      } finally {
+        // Re-enable UI
+        userInput.disabled = false;
+        sendBtn.disabled = false;
+        typingIndicator.classList.add('hidden');
+        userInput.focus();
+      }
+    });
+
+    // Clear Chat Logic
+    clearChatBtn.addEventListener('click', () => {
+      // Clear DOM messages (except first one)
+      const welcomeBubble = chatMessages.firstElementChild;
+      chatMessages.innerHTML = '';
+      if (welcomeBubble) {
+        chatMessages.appendChild(welcomeBubble);
+      }
+      
+      // Clear memory
+      chatHistory = [];
+      userInput.focus();
+    });
+
+  </script>
+</body>
+</html>

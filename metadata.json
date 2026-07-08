@@ -1,0 +1,6 @@
+{
+  "name": "Yurid.uz",
+  "description": "Advokatlik firmalari uchun sun'iy intellektga asoslangan mijoz qabul qilish (client intake) va dastlabki tahlil tizimi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
