@@ -1,6 +1,8 @@
 name = "yurid-uz"
-pages_build_output_dir = "dist"
 compatibility_date = "2024-11-01"
+
+[assets]
+directory = "./dist"
 
 [vars]
 GEMINI_API_KEY = "AIzaSyDICOB5U2BCMJlzpDzWnjXs0f5wg1-7iYY"
