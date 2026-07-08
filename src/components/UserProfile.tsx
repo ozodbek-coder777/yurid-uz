@@ -271,11 +271,26 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
         if (Array.isArray(data)) {
           // Filter submissions belonging to this user
           const userSubs = data.filter((s: any) => {
-            const cleanUserPhone = currentUser.telefon.replace(/\D/g, '');
-            const cleanSubPhone = (s.phone || '').replace(/\D/g, '');
-            return (cleanUserPhone && cleanUserPhone === cleanSubPhone) || 
-                   (currentUser.email && s.email && currentUser.email.toLowerCase() === s.email.toLowerCase()) ||
-                   (s.fullName && s.fullName.toLowerCase() === currentUser.ism.toLowerCase());
+            const userPhone = (currentUser.telefon || '').trim().replace(/\D/g, '');
+            const userEmail = (currentUser.email || '').trim().toLowerCase();
+            const userName = (currentUser.ism || '').trim().toLowerCase();
+            
+            const subPhone = (s.phone || '').trim().toLowerCase();
+            const cleanSubPhone = subPhone.replace(/\D/g, '');
+            const subEmail = (s.email || '').trim().toLowerCase();
+            const subName = (s.fullName || '').trim().toLowerCase();
+
+            // Match conditions:
+            // 1. Phone numbers match (after cleaning non-digits)
+            const phoneMatches = userPhone && (userPhone === cleanSubPhone || userPhone === subPhone);
+            
+            // 2. Emails match (if s.phone is an email, or if s.email matches user email)
+            const emailMatches = userEmail && (subEmail === userEmail || subPhone === userEmail || (s.userId && s.userId === currentUser.id));
+            
+            // 3. Name matches exactly (case-insensitive)
+            const nameMatches = userName && subName === userName;
+            
+            return phoneMatches || emailMatches || nameMatches;
           });
           setMySubmissions(userSubs);
 
@@ -424,7 +439,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
       const newUser = {
         id: 'u_' + Math.random().toString(36).substring(2, 9),
         ism: regIsm.trim(),
-        telefon: "",
+        telefon: regTelefon.trim(),
         email: regEmail.trim(),
         manzil: regManzil.trim(),
         parol: regParol,
@@ -440,6 +455,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
       // Reset inputs
       setRegIsm('');
       setRegEmail('');
+      setRegTelefon('');
       setRegManzil('');
       setRegParol('');
       setRegParolConfirm('');
@@ -475,7 +491,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
         }
 
         profiles[index].ism = editIsm.trim();
-        profiles[index].telefon = "";
+        profiles[index].telefon = editTelefon.trim();
         profiles[index].email = editEmail.trim();
         profiles[index].manzil = editManzil.trim();
         profiles[index].rasm = profilePic;
