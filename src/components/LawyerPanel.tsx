@@ -670,22 +670,16 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     setIsSyncing(true);
     setSyncStatus(null);
     try {
-      const response = await fetch('/api/submissions/sync', {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSyncStatus(data);
-        await fetchSubmissions();
+      // Local sync simulation using local storage
+      setTimeout(() => {
+        setSyncStatus({ success: true, added: 0, total: submissions.length, message: "Local sync completed" });
+        fetchSubmissions(false);
         setTimeout(() => {
           setSyncStatus(null);
         }, 5000);
-      } else {
-        alert(t.sync_err_alert);
-      }
+      }, 800);
     } catch (err) {
-      console.error("Error syncing with Firebase:", err);
-      alert(t.sync_net_alert);
+      console.error("Error syncing locally:", err);
     } finally {
       setIsSyncing(false);
     }
@@ -694,18 +688,15 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   const fetchSubmissions = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const response = await fetch('/api/submissions');
-      if (response.ok) {
-        const data = await response.json();
-        setSubmissions(data);
-        
-        // Sync selected detail view if already open
-        if (selectedSub) {
-          const updated = data.find((s: Submission) => s.id === selectedSub.id);
-          if (updated) {
-            setSelectedSub(updated);
-            setEditingNotes(updated.notes || '');
-          }
+      const data = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      setSubmissions(data);
+      
+      // Sync selected detail view if already open
+      if (selectedSub) {
+        const updated = data.find((s: Submission) => s.id === selectedSub.id);
+        if (updated) {
+          setSelectedSub(updated);
+          setEditingNotes(updated.notes || '');
         }
       }
     } catch (err) {
@@ -821,18 +812,26 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
   const handleUpdateStatus = async (id: string, newStatus: SubmissionStatus, comment?: string) => {
     try {
-      const response = await fetch(`/api/submissions/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const index = submissionsList.findIndex(s => s.id === id);
+      if (index !== -1) {
+        const sub = submissionsList[index];
+        const updatedTimeline = sub.timeline ? [...sub.timeline] : [];
+        updatedTimeline.push({
           status: newStatus,
-          comment: comment || '',
-          updatedBy: currentUser?.name || 'Advokat'
-        })
-      });
-      if (response.ok) {
-        const updated = await response.json();
-        // Update local list
+          timestamp: new Date().toISOString(),
+          updatedBy: currentUser?.name || 'Advokat',
+          comment: comment || `Status o'zgartirildi: ${newStatus}`
+        });
+        const updated: Submission = {
+          ...sub,
+          status: newStatus,
+          timeline: updatedTimeline
+        };
+        submissionsList[index] = updated;
+        localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+
+        // Update local state
         setSubmissions(prev => {
           const updatedList = prev.map(s => s.id === id ? updated : s);
           if (newStatus === 'RAD_ETILGAN') {
@@ -851,30 +850,38 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         }
       }
     } catch (err) {
-      console.error("Error updating status", err);
+      console.error("Error updating status in localStorage", err);
     }
   };
 
   const handleUpdateDeadline = async (id: string, deadline: string, comment?: string) => {
     try {
-      const response = await fetch(`/api/submissions/${id}/deadline`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const index = submissionsList.findIndex(s => s.id === id);
+      if (index !== -1) {
+        const sub = submissionsList[index];
+        const updatedTimeline = sub.timeline ? [...sub.timeline] : [];
+        updatedTimeline.push({
+          status: sub.status || "YANGI",
+          timestamp: new Date().toISOString(),
+          updatedBy: currentUser?.name || 'Advokat',
+          comment: comment || `Murojaatni yakunlash muddati (deadline) belgilandi: ${deadline}`
+        });
+        const updated: Submission = {
+          ...sub,
           deadline,
-          comment: comment || `Murojaatni yakunlash muddati belgilandi: ${deadline}`,
-          updatedBy: currentUser?.name || 'Advokat'
-        })
-      });
-      if (response.ok) {
-        const updated = await response.json();
+          timeline: updatedTimeline
+        };
+        submissionsList[index] = updated;
+        localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+
         setSubmissions(prev => prev.map(s => s.id === id ? updated : s));
         if (selectedSub && selectedSub.id === id) {
           setSelectedSub(updated);
         }
       }
     } catch (err) {
-      console.error("Error updating deadline", err);
+      console.error("Error updating deadline in localStorage", err);
     }
   };
 
@@ -882,18 +889,21 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     if (!selectedSub) return;
     setIsSavingNotes(true);
     try {
-      const response = await fetch(`/api/submissions/${selectedSub.id}/notes`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: editingNotes })
-      });
-      if (response.ok) {
-        const updated = await response.json();
+      const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const index = submissionsList.findIndex(s => s.id === selectedSub.id);
+      if (index !== -1) {
+        const updated: Submission = {
+          ...submissionsList[index],
+          notes: editingNotes
+        };
+        submissionsList[index] = updated;
+        localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
       }
     } catch (err) {
-      console.error("Error saving notes", err);
+      console.error("Error saving notes in localStorage", err);
     } finally {
       setIsSavingNotes(false);
     }
@@ -902,46 +912,38 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   const handleAssignLawyer = async (lawyerId: string) => {
     if (!selectedSub) return;
     try {
-      const response = await fetch(`/api/submissions/${selectedSub.id}/assign`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignedLawyer: lawyerId })
-      });
-      if (response.ok) {
-        const updated = await response.json();
-        // Update local list
-        setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
-        setSelectedSub(updated);
-      } else {
-        // Fallback for simulation/local offline
-        const updated = { ...selectedSub, assignedLawyer: lawyerId };
+      const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const index = submissionsList.findIndex(s => s.id === selectedSub.id);
+      if (index !== -1) {
+        const updated: Submission = {
+          ...submissionsList[index],
+          assignedLawyer: lawyerId
+        };
+        submissionsList[index] = updated;
+        localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
       }
     } catch (err) {
-      console.error("Error assigning lawyer:", err);
-      // Fallback
-      const updated = { ...selectedSub, assignedLawyer: lawyerId };
-      setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
-      setSelectedSub(updated);
+      console.error("Error assigning lawyer in localStorage", err);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(t.modal_delete_confirm)) return;
     try {
-      const response = await fetch(`/api/submissions/${id}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        setSubmissions(prev => prev.filter(s => s.id !== id));
-        if (selectedSub && selectedSub.id === id) {
-          setSelectedSub(null);
-          setIsModalOpen(false);
-        }
+      const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const filtered = submissionsList.filter(s => s.id !== id);
+      localStorage.setItem('submissions_list', JSON.stringify(filtered));
+
+      setSubmissions(prev => prev.filter(s => s.id !== id));
+      if (selectedSub && selectedSub.id === id) {
+        setSelectedSub(null);
+        setIsModalOpen(false);
       }
     } catch (err) {
-      console.error("Error deleting", err);
+      console.error("Error deleting from localStorage", err);
     }
   };
 

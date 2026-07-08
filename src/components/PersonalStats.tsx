@@ -26,17 +26,18 @@ export default function PersonalStats({ role, userPhoneOrEmail, lawyerId, lang }
   });
 
   useEffect(() => {
-    // 1. Fetch submissions from /api/submissions or localStorage fallback
+    // 1. Fetch submissions from localStorage submissions_list
     const loadStatsData = async () => {
       try {
-        const res = await fetch('/api/submissions');
         let allSubmissions: Submission[] = [];
-        if (res.ok) {
-          allSubmissions = await res.json();
+        const savedList = localStorage.getItem('submissions_list');
+        if (savedList) {
+          allSubmissions = JSON.parse(savedList);
         } else {
-          // Fallback
-          const saved = localStorage.getItem('submissions');
-          if (saved) allSubmissions = JSON.parse(saved);
+          const savedSubmissions = localStorage.getItem('submissions');
+          if (savedSubmissions) {
+            allSubmissions = JSON.parse(savedSubmissions);
+          }
         }
 
         // Filter submissions based on role

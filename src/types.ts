@@ -7,6 +7,13 @@ export interface ChatMessage {
 export type SubmissionStatus = 'YANGI' | 'KO\'RIB_CHIQILMOQDA' | 'QABUL_QILINGAN' | 'RAD_ETILGAN';
 export type UrgencyLevel = 'YUKSAK' | 'O\'RTA' | 'PAST';
 
+export interface TimelineItem {
+  status: string;
+  timestamp: string;
+  updatedBy: string;
+  comment: string;
+}
+
 export interface Submission {
   id: string;
   fullName: string;
@@ -22,6 +29,8 @@ export interface Submission {
   fault: string;
   notes?: string;
   assignedLawyer?: string;
+  deadline?: string;
+  timeline?: TimelineItem[];
 }
 
 export interface IntakeSession {

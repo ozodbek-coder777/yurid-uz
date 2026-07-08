@@ -512,11 +512,11 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
           return l;
         }));
 
-        // Send case request directly to lawyer's personal cabinet on the backend
-        fetch('/api/submissions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        // Save directly to localStorage submissions_list
+        try {
+          const submissionsList = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+          const newSub = {
+            id: "sub_" + Date.now(),
             fullName: contactName || "Anonim Mijoz",
             phone: contactPhone || "Ko'rsatilmadi",
             incidentDate: new Date().toISOString().split('T')[0],
@@ -528,20 +528,29 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
             ],
             summary: `### 📞 Bevosita Bog'lanish So'rovi\n\nMijoz **${contactName}** sizga bevosita yozma murojaat qoldirdi.\n\n**Mijoz xabari:**\n"${contactMsg}"\n\n**Telefon raqami:** ${contactPhone}\n**Mutaxassislik:** ${activeContactLawyer.specialization}`,
             urgency: "O'RTA",
+            status: "YANGI",
+            createdAt: new Date().toISOString(),
             injuries: "Yo'q / So'rov orqali",
             fault: "Ko'rib chiqilmoqda",
             notes: `Mijoz bevosita yollash xizmati orqali "${activeContactLawyer.name}" advokatini tanladi.`,
-            assignedLawyer: activeContactLawyer.id
-          })
-        })
-        .then(res => {
-          if (res.ok) {
-            console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi.");
-          }
-        })
-        .catch(err => {
+            assignedLawyer: activeContactLawyer.id,
+            timeline: [
+              {
+                status: "YANGI",
+                timestamp: new Date().toISOString(),
+                updatedBy: "Tizim (Mijoz)",
+                comment: "Murojaat muvaffaqiyatli qabul qilindi."
+              }
+            ]
+          };
+          submissionsList.unshift(newSub);
+          localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+          
+          alert("Arizangiz qabul qilindi!");
+          console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi.");
+        } catch (err) {
           console.error("Xatolik arizani saqlashda:", err);
-        });
+        }
       }
 
       setTimeout(() => {

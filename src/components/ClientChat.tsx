@@ -233,12 +233,8 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       submissionsList.unshift(newSub);
       localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
       
-      // Try posting to backend
-      await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSub)
-      }).catch(err => console.warn("Could not POST submission, saved locally only", err));
+      // Show alert "Arizangiz qabul qilindi!"
+      alert("Arizangiz qabul qilindi!");
 
       if (onSubmissionCreated) {
         onSubmissionCreated();

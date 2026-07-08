@@ -264,99 +264,99 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
     setEditManzil(currentUser.manzil || '');
     setProfilePic(currentUser.rasm || null);
 
-    // Fetch submissions
-    fetch('/api/submissions')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          // Filter submissions belonging to this user
-          const userSubs = data.filter((s: any) => {
-            const userPhone = (currentUser.telefon || '').trim().replace(/\D/g, '');
-            const userEmail = (currentUser.email || '').trim().toLowerCase();
-            const userName = (currentUser.ism || '').trim().toLowerCase();
-            
-            const subPhone = (s.phone || '').trim().toLowerCase();
-            const cleanSubPhone = subPhone.replace(/\D/g, '');
-            const subEmail = (s.email || '').trim().toLowerCase();
-            const subName = (s.fullName || '').trim().toLowerCase();
-
-            // Match conditions:
-            // 1. Phone numbers match (after cleaning non-digits)
-            const phoneMatches = userPhone && (userPhone === cleanSubPhone || userPhone === subPhone);
-            
-            // 2. Emails match (if s.phone is an email, or if s.email matches user email)
-            const emailMatches = userEmail && (subEmail === userEmail || subPhone === userEmail || (s.userId && s.userId === currentUser.id));
-            
-            // 3. Name matches exactly (case-insensitive)
-            const nameMatches = userName && subName === userName;
-            
-            return phoneMatches || emailMatches || nameMatches;
-          });
-          setMySubmissions(userSubs);
-
-          // Get list of lawyers contacted via submissions
-          const lawyersListRaw = localStorage.getItem('lawyers_list');
-          if (lawyersListRaw) {
-            try {
-              const lawyers = JSON.parse(lawyersListRaw);
-              const contactedLawyers: any[] = [];
-              const contactedLawyerIds = new Set<string>();
-
-              // Submissions with assigned lawyers
-              userSubs.forEach((s: any) => {
-                if (s.assignedLawyer) {
-                  contactedLawyerIds.add(s.assignedLawyer);
-                }
-              });
-
-              // Also check direct hire connections stored in localStorage
-              const connectionsRaw = localStorage.getItem('user_lawyer_connections');
-              if (connectionsRaw) {
-                const connections = JSON.parse(connectionsRaw);
-                if (Array.isArray(connections)) {
-                  connections.forEach((conn: any) => {
-                    if (conn.userPhone === currentUser.telefon || conn.userEmail === currentUser.email) {
-                      contactedLawyerIds.add(conn.lawyerId);
-                    }
-                  });
-                }
-              }
-
-              // Build unique list of contacted lawyers with full details
-              lawyers.forEach((l: any) => {
-                if (contactedLawyerIds.has(l.id)) {
-                  contactedLawyers.push(l);
-                }
-              });
-
-              setMyLawyers(contactedLawyers);
-            } catch (e) {
-              console.error("Error building contacted lawyers", e);
-            }
-          }
-
-          // Build messages list from submission chats and direct messages
-          const messagesList: any[] = [];
-          userSubs.forEach((s: any) => {
-            if (s.chatHistory && Array.isArray(s.chatHistory)) {
-              s.chatHistory.forEach((msg: any) => {
-                messagesList.push({
-                  id: s.id,
-                  lawyerName: s.assignedLawyer ? s.assignedLawyer : 'AI Assistent',
-                  role: msg.role,
-                  text: msg.text,
-                  timestamp: msg.timestamp || s.createdAt
-                });
-              });
-            }
-          });
+    // Fetch submissions from localStorage submissions_list
+    try {
+      const data = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      if (Array.isArray(data)) {
+        // Filter submissions belonging to this user
+        const userSubs = data.filter((s: any) => {
+          const userPhone = (currentUser.telefon || '').trim().replace(/\D/g, '');
+          const userEmail = (currentUser.email || '').trim().toLowerCase();
+          const userName = (currentUser.ism || '').trim().toLowerCase();
           
-          // Sort messages by time descending
-          messagesList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-          setMyMessages(messagesList);
+          const subPhone = (s.phone || '').trim().toLowerCase();
+          const cleanSubPhone = subPhone.replace(/\D/g, '');
+          const subEmail = (s.email || '').trim().toLowerCase();
+          const subName = (s.fullName || '').trim().toLowerCase();
+
+          // Match conditions:
+          // 1. Phone numbers match (after cleaning non-digits)
+          const phoneMatches = userPhone && (userPhone === cleanSubPhone || userPhone === subPhone);
+          
+          // 2. Emails match (if s.phone is an email, or if s.email matches user email)
+          const emailMatches = userEmail && (subEmail === userEmail || subPhone === userEmail || (s.userId && s.userId === currentUser.id));
+          
+          // 3. Name matches exactly (case-insensitive)
+          const nameMatches = userName && subName === userName;
+          
+          return phoneMatches || emailMatches || nameMatches;
+        });
+        setMySubmissions(userSubs);
+
+        // Get list of lawyers contacted via submissions
+        const lawyersListRaw = localStorage.getItem('lawyers_list');
+        if (lawyersListRaw) {
+          try {
+            const lawyers = JSON.parse(lawyersListRaw);
+            const contactedLawyers: any[] = [];
+            const contactedLawyerIds = new Set<string>();
+
+            // Submissions with assigned lawyers
+            userSubs.forEach((s: any) => {
+              if (s.assignedLawyer) {
+                contactedLawyerIds.add(s.assignedLawyer);
+              }
+            });
+
+            // Also check direct hire connections stored in localStorage
+            const connectionsRaw = localStorage.getItem('user_lawyer_connections');
+            if (connectionsRaw) {
+              const connections = JSON.parse(connectionsRaw);
+              if (Array.isArray(connections)) {
+                connections.forEach((conn: any) => {
+                  if (conn.userPhone === currentUser.telefon || conn.userEmail === currentUser.email) {
+                    contactedLawyerIds.add(conn.lawyerId);
+                  }
+                });
+              }
+            }
+
+            // Build unique list of contacted lawyers with full details
+            lawyers.forEach((l: any) => {
+              if (contactedLawyerIds.has(l.id)) {
+                contactedLawyers.push(l);
+              }
+            });
+
+            setMyLawyers(contactedLawyers);
+          } catch (e) {
+            console.error("Error building contacted lawyers", e);
+          }
         }
-      })
-      .catch(err => console.error("Error loading submissions for profile", err));
+
+        // Build messages list from submission chats and direct messages
+        const messagesList: any[] = [];
+        userSubs.forEach((s: any) => {
+          if (s.chatHistory && Array.isArray(s.chatHistory)) {
+            s.chatHistory.forEach((msg: any) => {
+              messagesList.push({
+                id: s.id,
+                lawyerName: s.assignedLawyer ? s.assignedLawyer : 'AI Assistent',
+                role: msg.role,
+                text: msg.text,
+                timestamp: msg.timestamp || s.createdAt
+              });
+            });
+          }
+        });
+        
+        // Sort messages by time descending
+        messagesList.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setMyMessages(messagesList);
+      }
+    } catch (err) {
+      console.error("Error loading submissions for profile from localStorage", err);
+    }
 
   }, [currentUser, lang]);
 
