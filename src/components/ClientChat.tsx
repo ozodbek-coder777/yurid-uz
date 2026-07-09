@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
+import { saveApplicationToSupabase } from '../utils/supabaseHelper';
 
 interface ClientChatProps {
   onSubmissionCreated?: () => void;
@@ -232,6 +233,9 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       };
       submissionsList.unshift(newSub);
       localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+      
+      // Save to Supabase
+      saveApplicationToSupabase(newSub as any);
       
       // Show alert "Arizangiz qabul qilindi!"
       alert("Arizangiz qabul qilindi!");

@@ -20,6 +20,7 @@ import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
+import { saveApplicationToSupabase } from '../utils/supabaseHelper';
 
 interface LawyersHireProps {
   lang: 'uz' | 'ru';
@@ -545,6 +546,9 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
           };
           submissionsList.unshift(newSub);
           localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
+          
+          // Save to Supabase
+          saveApplicationToSupabase(newSub as any);
           
           alert("Arizangiz qabul qilindi!");
           console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi.");

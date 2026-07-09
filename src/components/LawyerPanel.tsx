@@ -39,6 +39,7 @@ import {
   Newspaper
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
+import { getApplicationsFromSupabase, updateApplicationInSupabase, deleteApplicationFromSupabase } from '../utils/supabaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
 import AdminPoliceReports from './AdminPoliceReports';
@@ -688,7 +689,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   const fetchSubmissions = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = JSON.parse(localStorage.getItem('submissions_list') || '[]');
+      const data = await getApplicationsFromSupabase();
       setSubmissions(data);
       
       // Sync selected detail view if already open
@@ -831,6 +832,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
+        // Update in Supabase
+        updateApplicationInSupabase(id, { status: newStatus, timeline: updatedTimeline });
+
         // Update local state
         setSubmissions(prev => {
           const updatedList = prev.map(s => s.id === id ? updated : s);
@@ -875,6 +879,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
+        // Update in Supabase
+        updateApplicationInSupabase(id, { deadline, timeline: updatedTimeline });
+
         setSubmissions(prev => prev.map(s => s.id === id ? updated : s));
         if (selectedSub && selectedSub.id === id) {
           setSelectedSub(updated);
@@ -899,6 +906,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
+        // Update in Supabase
+        updateApplicationInSupabase(selectedSub.id, { notes: editingNotes });
+
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
       }
@@ -922,6 +932,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
+        // Update in Supabase
+        updateApplicationInSupabase(selectedSub.id, { assignedLawyer: lawyerId });
+
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
       }
@@ -936,6 +949,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       const submissionsList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
       const filtered = submissionsList.filter(s => s.id !== id);
       localStorage.setItem('submissions_list', JSON.stringify(filtered));
+
+      // Delete from Supabase
+      deleteApplicationFromSupabase(id);
 
       setSubmissions(prev => prev.filter(s => s.id !== id));
       if (selectedSub && selectedSub.id === id) {
