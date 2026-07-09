@@ -1,48 +1,7 @@
-rules_version = '2';
-service cloud_firestore {
+service cloud.firestore {
   match /databases/{database}/documents {
-    // 1. Global Safety Net
     match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
-    // Validation helper for Application
-    function isValidApplication(data) {
-      return data.id is string &&
-             data.fullName is string && data.fullName.size() <= 200 &&
-             data.phone is string && data.phone.size() <= 50 &&
-             data.status is string &&
-             data.urgency is string &&
-             data.createdAt is string;
-    }
-
-    // 2. Applications collection rules
-    match /applications/{applicationId} {
-      // Public creation (for client intake), but validated structure
-      allow create: if isValidId(applicationId) && isValidApplication(request.resource.data);
-      
-      // Reading/listing restricted to authenticated users (lawyers)
-      allow get, list: if isSignedIn();
-
-      // Updating is restricted to authenticated users (lawyers)
-      allow update: if isSignedIn() && 
-                    isValidApplication(request.resource.data) &&
-                    (
-                      // Verify status updates and notes
-                      request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'notes', 'assignedLawyer', 'urgency'])
-                    );
-
-      // Deleting restricted to authenticated users (lawyers)
-      allow delete: if isSignedIn();
+      allow read, write: if true;
     }
   }
 }

@@ -3,7 +3,9 @@
   "appId": "1:469684088171:web:b28e92192316303001b02e",
   "apiKey": "AIzaSyBi6mPJpc1WiYQiK7b7qGCM8pFKv3cbxNc",
   "authDomain": "celestial-chassis-7nzsc.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-lawyerclientinta-568825d7-2356-4a1f-91ef-93d94cb99e92",
   "storageBucket": "celestial-chassis-7nzsc.firebasestorage.app",
   "messagingSenderId": "469684088171",
-  "measurementId": ""
+  "measurementId": "",
+  "oAuthClientId": "469684088171-b6afemiu4qn6a0673iskqoedqudsisqn.apps.googleusercontent.com"
 }
