@@ -12,6 +12,10 @@ import {
 import { getFirestore } from "firebase/firestore";
 import appletConfig from "../../firebase-applet-config.json";
 
+// Re-export modular functions as requested by the user
+export { initializeApp, getApps, getApp };
+export { getFirestore };
+
 // Extend global window interface for Firebase debug/testing scripts and documentation parity
 declare global {
   interface Window {
@@ -21,20 +25,29 @@ declare global {
   }
 }
 
-// Dynamic configuration selection: prioritize appletConfig, then env variables, then hardcoded fallback
+// Config variables with fallback to exact new firebase-applet-config.json values
+const apiKey = appletConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyBi6mPJpc1WiYQiK7b7qGCM8pFKv3cbxNc";
+const authDomain = appletConfig.authDomain || (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || "celestial-chassis-7nzsc.firebaseapp.com";
+const projectId = appletConfig.projectId || (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || "celestial-chassis-7nzsc";
+const storageBucket = appletConfig.storageBucket || (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "celestial-chassis-7nzsc.firebasestorage.app";
+const messagingSenderId = appletConfig.messagingSenderId || (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "469684088171";
+const appId = appletConfig.appId || (import.meta as any).env?.VITE_FIREBASE_APP_ID || "1:469684088171:web:b28e92192316303001b02e";
+const measurementId = (appletConfig as any).measurementId || (import.meta as any).env?.VITE_FIREBASE_MEASUREMENT_ID || "";
+const firestoreDatabaseId = (appletConfig as any).firestoreDatabaseId || (import.meta as any).env?.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-lawyerclientinta-568825d7-2356-4a1f-91ef-93d94cb99e92";
+
 const firebaseConfig = {
-  apiKey: appletConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyDICOB5U2BCMJlzpDzWnjXs0f5wg1-7iYY",
-  authDomain: appletConfig.authDomain || (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || "yurid-uz.firebaseapp.com",
-  projectId: appletConfig.projectId || (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || "yurid-uz",
-  storageBucket: appletConfig.storageBucket || (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "yurid-uz.firebasestorage.app",
-  messagingSenderId: appletConfig.messagingSenderId || (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "394576425965",
-  appId: appletConfig.appId || (import.meta as any).env?.VITE_FIREBASE_APP_ID || "1:394576425965:web:cea13fe502c22ef7cd2de4",
-  measurementId: (appletConfig as any).measurementId || "G-5Q85DSKJ6E",
-  firestoreDatabaseId: (appletConfig as any).firestoreDatabaseId || ""
+  apiKey,
+  authDomain,
+  projectId,
+  storageBucket,
+  messagingSenderId,
+  appId,
+  measurementId,
+  firestoreDatabaseId
 };
 
 // Initialize Firebase App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId 
   ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
