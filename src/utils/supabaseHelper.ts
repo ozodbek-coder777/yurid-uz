@@ -2,7 +2,7 @@ import { Submission } from '../types';
 
 // Use environment variables if present, otherwise default to user's specified values
 const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://cxnrwnzdrldtlsttgwar.supabase.co';
-const rawKey = (import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fCEudLXQYuM7bu-s2RSDkA_iuabg9Km';
+const rawKey = (import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable__11zRqPvb8fGBDsKq5QTqA_VPFC4rGi';
 
 // Clean leading/trailing quotes if they were loaded literally from .env file
 const SUPABASE_URL = rawUrl.replace(/^["']|["']$/g, '').trim();
