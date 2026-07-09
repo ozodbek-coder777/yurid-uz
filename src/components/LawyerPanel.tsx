@@ -39,7 +39,6 @@ import {
   Newspaper
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
-import { getApplicationsFromSupabase, updateApplicationInSupabase, deleteApplicationFromSupabase, saveApplicationToSupabase } from '../utils/supabaseHelper';
 import { getApplicationsFromFirebase, updateApplicationInFirebase, deleteApplicationFromFirebase, saveApplicationToFirebase } from '../utils/firebaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
@@ -672,50 +671,17 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     setIsSyncing(true);
     setSyncStatus(null);
     try {
-      console.log("Sinxronizatsiya boshlandi...");
-      const supabaseData = await getApplicationsFromSupabase();
+      console.log("Firebase ma'lumotlari yangilanmoqda...");
       const firebaseData = await getApplicationsFromFirebase();
-
-      const mergedMap = new Map<string, Submission>();
-      
-      supabaseData.forEach(sub => {
-        mergedMap.set(sub.id, sub);
-      });
-
-      let addedToFirebase = 0;
-
-      firebaseData.forEach(sub => {
-        const existing = mergedMap.get(sub.id);
-        if (!existing) {
-          mergedMap.set(sub.id, sub);
-        }
-      });
-
-      const mergedList = Array.from(mergedMap.values());
-
-      for (const sub of mergedList) {
-        const inSupabase = supabaseData.some(s => s.id === sub.id);
-        const inFirebase = firebaseData.some(f => f.id === sub.id);
-
-        if (!inFirebase) {
-          await saveApplicationToFirebase(sub);
-          addedToFirebase++;
-        }
-        if (!inSupabase) {
-          await saveApplicationToSupabase(sub);
-        }
-      }
-
+      setSubmissions(firebaseData);
       setSyncStatus({ 
         success: true, 
-        added: addedToFirebase, 
-        total: mergedList.length, 
+        added: 0, 
+        total: firebaseData.length, 
         message: lang === 'uz' 
-          ? `Sinxronizatsiya muvaffaqiyatli! Firebase-ga ${addedToFirebase} ta ariza yuklandi.` 
-          : `Синхронизация успешна! Загружено ${addedToFirebase} заявок в Firebase.`
+          ? `Muvaffaqiyatli yangilandi! Jami ${firebaseData.length} ta ariza yuklandi.` 
+          : `Успешно обновлено! Всего загружено ${firebaseData.length} заявок.`
       });
-
-      setSubmissions(mergedList);
 
       setTimeout(() => {
         setSyncStatus(null);
@@ -732,17 +698,12 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     try {
       let data: Submission[] = [];
       try {
-        data = await getApplicationsFromSupabase();
+        data = await getApplicationsFromFirebase();
       } catch (err) {
-        console.warn("Supabase-dan olishda xatolik, Firebase-ga o'tilmoqda:", err);
-        data = await getApplicationsFromFirebase();
+        console.warn("Firebase-dan olishda xatolik:", err);
       }
 
-      if (!data || data.length === 0) {
-        data = await getApplicationsFromFirebase();
-      }
-
-      setSubmissions(data);
+      setSubmissions(data || []);
       
       // Sync selected detail view if already open
       if (selectedSub) {
@@ -884,8 +845,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase and Firebase Firestore in parallel
-        updateApplicationInSupabase(id, { status: newStatus, timeline: updatedTimeline });
+        // Update in Firebase Firestore
         updateApplicationInFirebase(id, { status: newStatus, timeline: updatedTimeline });
 
         // Update local state
@@ -932,8 +892,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase and Firebase Firestore in parallel
-        updateApplicationInSupabase(id, { deadline, timeline: updatedTimeline });
+        // Update in Firebase Firestore
         updateApplicationInFirebase(id, { deadline, timeline: updatedTimeline });
 
         setSubmissions(prev => prev.map(s => s.id === id ? updated : s));
@@ -960,8 +919,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase and Firebase Firestore in parallel
-        updateApplicationInSupabase(selectedSub.id, { notes: editingNotes });
+        // Update in Firebase Firestore
         updateApplicationInFirebase(selectedSub.id, { notes: editingNotes });
 
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
@@ -987,8 +945,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase and Firebase Firestore in parallel
-        updateApplicationInSupabase(selectedSub.id, { assignedLawyer: lawyerId });
+        // Update in Firebase Firestore
         updateApplicationInFirebase(selectedSub.id, { assignedLawyer: lawyerId });
 
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
@@ -1006,8 +963,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       const filtered = submissionsList.filter(s => s.id !== id);
       localStorage.setItem('submissions_list', JSON.stringify(filtered));
 
-      // Delete from Supabase and Firebase Firestore in parallel
-      deleteApplicationFromSupabase(id);
+      // Delete from Firebase Firestore
       deleteApplicationFromFirebase(id);
 
       setSubmissions(prev => prev.filter(s => s.id !== id));

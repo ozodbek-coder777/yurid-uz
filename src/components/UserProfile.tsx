@@ -8,7 +8,7 @@ import {
 import { getBlacklistedUser } from '../utils/blacklist';
 import PersonalStats from './PersonalStats';
 import { getNews } from '../utils/newsHelper';
-import { getApplicationsFromSupabase } from '../utils/supabaseHelper';
+import { getApplicationsFromFirebase } from '../utils/firebaseHelper';
 import { NewsItem } from '../types';
 
 interface UserProfileProps {
@@ -265,10 +265,10 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
     setEditManzil(currentUser.manzil || '');
     setProfilePic(currentUser.rasm || null);
 
-    // Fetch submissions from Supabase with localStorage fallback
+    // Fetch submissions from Firebase with localStorage fallback
     const fetchSubmissions = async () => {
       try {
-        const data = await getApplicationsFromSupabase();
+        const data = await getApplicationsFromFirebase();
         if (Array.isArray(data)) {
           // Filter submissions belonging to this user
           const userSubs = data.filter((s: any) => {

@@ -20,7 +20,6 @@ import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
-import { saveApplicationToSupabase } from '../utils/supabaseHelper';
 import { saveApplicationToFirebase } from '../utils/firebaseHelper';
 
 interface LawyersHireProps {
@@ -548,8 +547,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
           submissionsList.unshift(newSub);
           localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
           
-          // Save to Supabase and Firebase Firestore in parallel
-          saveApplicationToSupabase(newSub as any);
+          // Save to Firebase Firestore
           saveApplicationToFirebase(newSub as any);
           
           alert("Arizangiz qabul qilindi!");

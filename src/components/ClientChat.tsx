@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
-import { saveApplicationToSupabase } from '../utils/supabaseHelper';
 import { saveApplicationToFirebase } from '../utils/firebaseHelper';
 
 interface ClientChatProps {
@@ -235,8 +234,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       submissionsList.unshift(newSub);
       localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
       
-      // Save to Supabase and Firebase Firestore in parallel
-      saveApplicationToSupabase(newSub as any);
+      // Save to Firebase Firestore
       saveApplicationToFirebase(newSub as any);
       
       // Show alert "Arizangiz qabul qilindi!"

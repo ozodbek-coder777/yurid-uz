@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Chart from 'chart.js/auto';
 import { BarChart3, PieChart, ClipboardList, CheckCircle2, Clock, Users, Star, MessageSquare } from 'lucide-react';
 import { Submission, LawyerDetails } from '../types';
-import { getApplicationsFromSupabase } from '../utils/supabaseHelper';
+import { getApplicationsFromFirebase } from '../utils/firebaseHelper';
 
 interface PersonalStatsProps {
   role: 'client' | 'lawyer' | 'admin';
@@ -27,10 +27,10 @@ export default function PersonalStats({ role, userPhoneOrEmail, lawyerId, lang }
   });
 
   useEffect(() => {
-    // 1. Fetch submissions from Supabase with localStorage fallback
+    // 1. Fetch submissions from Firebase with localStorage fallback
     const loadStatsData = async () => {
       try {
-        let allSubmissions: Submission[] = await getApplicationsFromSupabase();
+        let allSubmissions: Submission[] = await getApplicationsFromFirebase();
 
         // Filter submissions based on role
         let userSubs: Submission[] = [];
