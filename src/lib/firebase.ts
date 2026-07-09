@@ -29,13 +29,16 @@ const firebaseConfig = {
   storageBucket: appletConfig.storageBucket || (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "yurid-uz.firebasestorage.app",
   messagingSenderId: appletConfig.messagingSenderId || (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "394576425965",
   appId: appletConfig.appId || (import.meta as any).env?.VITE_FIREBASE_APP_ID || "1:394576425965:web:cea13fe502c22ef7cd2de4",
-  measurementId: (appletConfig as any).measurementId || "G-5Q85DSKJ6E"
+  measurementId: (appletConfig as any).measurementId || "G-5Q85DSKJ6E",
+  firestoreDatabaseId: (appletConfig as any).firestoreDatabaseId || ""
 };
 
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = firebaseConfig.firestoreDatabaseId 
+  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+  : getFirestore(app);
 
 // Keep track of recaptcha verifier
 let recaptchaVerifier: RecaptchaVerifier | null = null;
