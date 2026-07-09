@@ -1,8 +1,18 @@
 import { Submission } from '../types';
 
 // Use environment variables if present, otherwise default to user's specified values
-const SUPABASE_URL = (import.meta as any).env.VITE_SUPABASE_URL || 'https://cxnrwnzdrldtlsttgwar.supabase.co';
-const SUPABASE_KEY = (import.meta as any).env.VITE_SUPABASE_KEY || 'sb_publishable_fCEudLXQYuM7bu-s2RSDkA_iuabg9Km';
+const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://cxnrwnzdrldtlsttgwar.supabase.co';
+const rawKey = (import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_fCEudLXQYuM7bu-s2RSDkA_iuabg9Km';
+
+// Clean leading/trailing quotes if they were loaded literally from .env file
+const SUPABASE_URL = rawUrl.replace(/^["']|["']$/g, '').trim();
+const SUPABASE_KEY = rawKey.replace(/^["']|["']$/g, '').trim();
+
+console.log("Supabase sozlamalari yuklandi:", {
+  url: SUPABASE_URL,
+  keyLength: SUPABASE_KEY.length,
+  keyPreview: SUPABASE_KEY.substring(0, 10) + "..." + SUPABASE_KEY.substring(SUPABASE_KEY.length - 5)
+});
 
 /**
  * 1. Arizalarni Supabase ga saqlaydigan funksiya
