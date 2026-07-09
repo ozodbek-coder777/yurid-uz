@@ -21,6 +21,7 @@ import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
 import { saveApplicationToSupabase } from '../utils/supabaseHelper';
+import { saveApplicationToFirebase } from '../utils/firebaseHelper';
 
 interface LawyersHireProps {
   lang: 'uz' | 'ru';
@@ -547,8 +548,9 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
           submissionsList.unshift(newSub);
           localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
           
-          // Save to Supabase
+          // Save to Supabase and Firebase Firestore in parallel
           saveApplicationToSupabase(newSub as any);
+          saveApplicationToFirebase(newSub as any);
           
           alert("Arizangiz qabul qilindi!");
           console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi.");

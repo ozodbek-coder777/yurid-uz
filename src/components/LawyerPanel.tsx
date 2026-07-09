@@ -39,7 +39,8 @@ import {
   Newspaper
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
-import { getApplicationsFromSupabase, updateApplicationInSupabase, deleteApplicationFromSupabase } from '../utils/supabaseHelper';
+import { getApplicationsFromSupabase, updateApplicationInSupabase, deleteApplicationFromSupabase, saveApplicationToSupabase } from '../utils/supabaseHelper';
+import { getApplicationsFromFirebase, updateApplicationInFirebase, deleteApplicationFromFirebase, saveApplicationToFirebase } from '../utils/firebaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
 import AdminPoliceReports from './AdminPoliceReports';
@@ -671,16 +672,56 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     setIsSyncing(true);
     setSyncStatus(null);
     try {
-      // Local sync simulation using local storage
+      console.log("Sinxronizatsiya boshlandi...");
+      const supabaseData = await getApplicationsFromSupabase();
+      const firebaseData = await getApplicationsFromFirebase();
+
+      const mergedMap = new Map<string, Submission>();
+      
+      supabaseData.forEach(sub => {
+        mergedMap.set(sub.id, sub);
+      });
+
+      let addedToFirebase = 0;
+
+      firebaseData.forEach(sub => {
+        const existing = mergedMap.get(sub.id);
+        if (!existing) {
+          mergedMap.set(sub.id, sub);
+        }
+      });
+
+      const mergedList = Array.from(mergedMap.values());
+
+      for (const sub of mergedList) {
+        const inSupabase = supabaseData.some(s => s.id === sub.id);
+        const inFirebase = firebaseData.some(f => f.id === sub.id);
+
+        if (!inFirebase) {
+          await saveApplicationToFirebase(sub);
+          addedToFirebase++;
+        }
+        if (!inSupabase) {
+          await saveApplicationToSupabase(sub);
+        }
+      }
+
+      setSyncStatus({ 
+        success: true, 
+        added: addedToFirebase, 
+        total: mergedList.length, 
+        message: lang === 'uz' 
+          ? `Sinxronizatsiya muvaffaqiyatli! Firebase-ga ${addedToFirebase} ta ariza yuklandi.` 
+          : `Синхронизация успешна! Загружено ${addedToFirebase} заявок в Firebase.`
+      });
+
+      setSubmissions(mergedList);
+
       setTimeout(() => {
-        setSyncStatus({ success: true, added: 0, total: submissions.length, message: "Local sync completed" });
-        fetchSubmissions(false);
-        setTimeout(() => {
-          setSyncStatus(null);
-        }, 5000);
-      }, 800);
+        setSyncStatus(null);
+      }, 5000);
     } catch (err) {
-      console.error("Error syncing locally:", err);
+      console.error("Error syncing databases:", err);
     } finally {
       setIsSyncing(false);
     }
@@ -689,7 +730,18 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   const fetchSubmissions = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const data = await getApplicationsFromSupabase();
+      let data: Submission[] = [];
+      try {
+        data = await getApplicationsFromSupabase();
+      } catch (err) {
+        console.warn("Supabase-dan olishda xatolik, Firebase-ga o'tilmoqda:", err);
+        data = await getApplicationsFromFirebase();
+      }
+
+      if (!data || data.length === 0) {
+        data = await getApplicationsFromFirebase();
+      }
+
       setSubmissions(data);
       
       // Sync selected detail view if already open
@@ -832,8 +884,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase
+        // Update in Supabase and Firebase Firestore in parallel
         updateApplicationInSupabase(id, { status: newStatus, timeline: updatedTimeline });
+        updateApplicationInFirebase(id, { status: newStatus, timeline: updatedTimeline });
 
         // Update local state
         setSubmissions(prev => {
@@ -879,8 +932,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase
+        // Update in Supabase and Firebase Firestore in parallel
         updateApplicationInSupabase(id, { deadline, timeline: updatedTimeline });
+        updateApplicationInFirebase(id, { deadline, timeline: updatedTimeline });
 
         setSubmissions(prev => prev.map(s => s.id === id ? updated : s));
         if (selectedSub && selectedSub.id === id) {
@@ -906,8 +960,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase
+        // Update in Supabase and Firebase Firestore in parallel
         updateApplicationInSupabase(selectedSub.id, { notes: editingNotes });
+        updateApplicationInFirebase(selectedSub.id, { notes: editingNotes });
 
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
@@ -932,8 +987,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         submissionsList[index] = updated;
         localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
 
-        // Update in Supabase
+        // Update in Supabase and Firebase Firestore in parallel
         updateApplicationInSupabase(selectedSub.id, { assignedLawyer: lawyerId });
+        updateApplicationInFirebase(selectedSub.id, { assignedLawyer: lawyerId });
 
         setSubmissions(prev => prev.map(s => s.id === selectedSub.id ? updated : s));
         setSelectedSub(updated);
@@ -950,8 +1006,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       const filtered = submissionsList.filter(s => s.id !== id);
       localStorage.setItem('submissions_list', JSON.stringify(filtered));
 
-      // Delete from Supabase
+      // Delete from Supabase and Firebase Firestore in parallel
       deleteApplicationFromSupabase(id);
+      deleteApplicationFromFirebase(id);
 
       setSubmissions(prev => prev.filter(s => s.id !== id));
       if (selectedSub && selectedSub.id === id) {

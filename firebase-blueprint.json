@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "Application": {
+      "title": "Application",
+      "description": "An application submitted by a client",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "incidentDate": {
+          "type": "string"
+        },
+        "incidentDescription": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "urgency": {
+          "type": "string",
+          "enum": ["YUKSAK", "O'RTA", "PAST"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["YANGI", "KO'RIB_CHIQILMOQDA", "QABUL_QILINGAN", "RAD_ETILGAN"]
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "injuries": {
+          "type": "string"
+        },
+        "fault": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "assignedLawyer": {
+          "type": "string"
+        },
+        "deadline": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "fullName", "phone", "incidentDescription", "status", "urgency", "createdAt"]
+    }
+  },
+  "firestore": {
+    "applications": {
+      "schema": "Application",
+      "description": "User applications/submissions"
+    }
+  }
+}

@@ -9,6 +9,8 @@ import {
   onAuthStateChanged,
   User
 } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import appletConfig from "../../firebase-applet-config.json";
 
 // Extend global window interface for Firebase debug/testing scripts and documentation parity
 declare global {
@@ -19,19 +21,21 @@ declare global {
   }
 }
 
+// Dynamic configuration selection: prioritize appletConfig, then env variables, then hardcoded fallback
 const firebaseConfig = {
-  apiKey: "AIzaSyDICOB5U2BCMJlzpDzWnjXs0f5wg1-7iYY",
-  authDomain: "yurid-uz.firebaseapp.com",
-  projectId: "yurid-uz",
-  storageBucket: "yurid-uz.firebasestorage.app",
-  messagingSenderId: "394576425965",
-  appId: "1:394576425965:web:cea13fe502c22ef7cd2de4",
-  measurementId: "G-5Q85DSKJ6E"
+  apiKey: appletConfig.apiKey || (import.meta as any).env?.VITE_FIREBASE_API_KEY || "AIzaSyDICOB5U2BCMJlzpDzWnjXs0f5wg1-7iYY",
+  authDomain: appletConfig.authDomain || (import.meta as any).env?.VITE_FIREBASE_AUTH_DOMAIN || "yurid-uz.firebaseapp.com",
+  projectId: appletConfig.projectId || (import.meta as any).env?.VITE_FIREBASE_PROJECT_ID || "yurid-uz",
+  storageBucket: appletConfig.storageBucket || (import.meta as any).env?.VITE_FIREBASE_STORAGE_BUCKET || "yurid-uz.firebasestorage.app",
+  messagingSenderId: appletConfig.messagingSenderId || (import.meta as any).env?.VITE_FIREBASE_MESSAGING_SENDER_ID || "394576425965",
+  appId: appletConfig.appId || (import.meta as any).env?.VITE_FIREBASE_APP_ID || "1:394576425965:web:cea13fe502c22ef7cd2de4",
+  measurementId: (appletConfig as any).measurementId || "G-5Q85DSKJ6E"
 };
 
 // Initialize Firebase App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 // Keep track of recaptcha verifier
 let recaptchaVerifier: RecaptchaVerifier | null = null;

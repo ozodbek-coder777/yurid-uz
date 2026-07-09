@@ -3,6 +3,7 @@ import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCi
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { saveApplicationToSupabase } from '../utils/supabaseHelper';
+import { saveApplicationToFirebase } from '../utils/firebaseHelper';
 
 interface ClientChatProps {
   onSubmissionCreated?: () => void;
@@ -234,8 +235,9 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       submissionsList.unshift(newSub);
       localStorage.setItem('submissions_list', JSON.stringify(submissionsList));
       
-      // Save to Supabase
+      // Save to Supabase and Firebase Firestore in parallel
       saveApplicationToSupabase(newSub as any);
+      saveApplicationToFirebase(newSub as any);
       
       // Show alert "Arizangiz qabul qilindi!"
       alert("Arizangiz qabul qilindi!");
