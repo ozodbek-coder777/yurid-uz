@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Exclude sensitive dynamic admin panels or storage simulations
+Disallow: /admin-panel/
+Disallow: /api/
+
+Sitemap: https://yurid.uz/sitemap.xml

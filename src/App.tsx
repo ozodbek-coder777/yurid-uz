@@ -1,16 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X } from 'lucide-react';
-import ClientChat from './components/ClientChat';
-import LawyerPanel from './components/LawyerPanel';
-import LawyersHire from './components/LawyersHire';
-import PoliceReportComponent from './components/PoliceReport';
-import UserProfile from './components/UserProfile';
-import WitnessesList from './components/WitnessesList';
-import NewsSection from './components/NewsSection';
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
-import ClientChatModal from './components/ClientChatModal';
 import { getUnreadCount } from './utils/chatHelper';
+
+// Lazy load large sub-tab and modal components to reduce initial page load size on mobile
+const ClientChat = lazy(() => import('./components/ClientChat'));
+const LawyerPanel = lazy(() => import('./components/LawyerPanel'));
+const LawyersHire = lazy(() => import('./components/LawyersHire'));
+const PoliceReportComponent = lazy(() => import('./components/PoliceReport'));
+const UserProfile = lazy(() => import('./components/UserProfile'));
+const WitnessesList = lazy(() => import('./components/WitnessesList'));
+const NewsSection = lazy(() => import('./components/NewsSection'));
+const ClientChatModal = lazy(() => import('./components/ClientChatModal'));
+
+// Reusable elegant loader fallback for lazy components
+function ComponentLoader() {
+  return (
+    <div className="w-full min-h-[250px] flex flex-col items-center justify-center space-y-4 animate-pulse p-6 bg-[#0D1017] border border-[#1F2937] rounded-3xl">
+      <div className="relative w-10 h-10">
+        <div className="absolute inset-0 border-4 border-blue-500/10 rounded-full"></div>
+        <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      <p className="text-xs text-gray-400 font-mono">Yuklanmoqda... / Загрузка...</p>
+    </div>
+  );
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'client' | 'lawyer'>('client');
@@ -145,6 +160,103 @@ export default function App() {
       clearInterval(interval);
     };
   }, []);
+
+  // Dynamic SEO Title and Meta Description Update based on tab and language
+  useEffect(() => {
+    let title = "Yurid.uz - O'zbekistondagi Onlayn Yuridik Yordam";
+    let desc = "Eng ilg'or onlayn yuridik yordam simulyatori va advokatlar platformasi.";
+    
+    if (activeTab === 'lawyer') {
+      title = lang === 'uz' 
+        ? "Advokat Paneli - Yurid.uz" 
+        : "Панель адвоката - Yurid.uz";
+      desc = lang === 'uz'
+        ? "Kelib tushgan yuridik arizalarni tahlil qilish, statuslarni yangilash va boshqarish paneli."
+        : "Панель анализа, обновления статусов и управления поступившими юридическими обращениями.";
+    } else {
+      switch (clientSubTab) {
+        case 'chatbot':
+          title = lang === 'uz' 
+            ? "AI Yuridik Maslahat - Yurid.uz" 
+            : "ИИ Юридическая Консультация - Yurid.uz";
+          desc = lang === 'uz'
+            ? "Savolingizni bering va sun'iy intellekt yordamida tezkor bepul yuridik maslahat oling."
+            : "Задайте свой вопрос и получите мгновенную бесплатную юридическую консультацию с помощью ИИ.";
+          break;
+        case 'hire':
+          title = lang === 'uz'
+            ? "Professional Advokat Yollash - Yurid.uz"
+            : "Нанять профессионального адвоката - Yurid.uz";
+          desc = lang === 'uz'
+            ? "Malakali va tajribali advokatlarni tanlang, reytinglarni ko'ring va shartnoma tuzing."
+            : "Выбирайте квалифицированных и опытных адвокатов, смотрите рейтинги и заключайте договоры.";
+          break;
+        case 'police':
+          title = lang === 'uz'
+            ? "Politsiyaga Onlayn Ariza Topshirish - Yurid.uz"
+            : "Подать онлайн заявление в полицию - Yurid.uz";
+          desc = lang === 'uz'
+            ? "Huquqbuzarliklar va hodisalar bo'yicha tezkor onlayn politsiya hisobotini shakllantiring."
+            : "Быстро сформируйте онлайн отчет в полицию по правонарушениям и происшествиям.";
+          break;
+        case 'profile':
+          title = lang === 'uz'
+            ? "Mijoz Profili va Arizalarim - Yurid.uz"
+            : "Профиль клиента и мои заявления - Yurid.uz";
+          desc = lang === 'uz'
+            ? "Shaxsiy profilingiz, yuborilgan arizalar tarixi va advokatlar bilan yozishmalar."
+            : "Ваш личный профиль, история отправленных заявлений и переписка с адвокатами.";
+          break;
+        case 'witnesses':
+          title = lang === 'uz'
+            ? "Guvohlar va Hodisalar Qidiruvi - Yurid.uz"
+            : "Поиск свидетелей и происшествий - Yurid.uz";
+          desc = lang === 'uz'
+            ? "Yo'l-transport hodisalari yoki boshqa holatlar bo'yicha guvohlarni topish va ma'lumot qoldirish."
+            : "Поиск свидетелей ДТП или других происшествий, а также возможность оставить информацию.";
+          break;
+        case 'news':
+          title = lang === 'uz'
+            ? "Yuridik Yangiliklar va Qonunchilik - Yurid.uz"
+            : "Юридические новости и законодательство - Yurid.uz";
+          desc = lang === 'uz'
+            ? "O'zbekistonning eng so'nggi huquqiy va qonunchilik yangiliklari, tahlillari va sharhlari."
+            : "Самые свежие юридические новости, законодательные акты Узбекистана и экспертные обзоры.";
+          break;
+        default:
+          break;
+      }
+    }
+    
+    // Set document title
+    document.title = title;
+    
+    // Set meta description
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', desc);
+    
+    // Update Open Graph Tags
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', title);
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement('meta');
+      ogDesc.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute('content', desc);
+  }, [activeTab, clientSubTab, lang]);
 
   // Chat Modal and Unread Count State
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -572,7 +684,7 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <>
+              <Suspense fallback={<ComponentLoader />}>
                 {clientSubTab === 'chatbot' && (
                   <>
                     <ClientChat onSubmissionCreated={handleSubmissionCreated} lang={lang} />
@@ -646,7 +758,7 @@ export default function App() {
                 {clientSubTab === 'news' && (
                   <NewsSection lang={lang} />
                 )}
-              </>
+              </Suspense>
             )}
           </div>
         )}
@@ -687,7 +799,9 @@ export default function App() {
             </div>
 
             {/* Lawyer dashboard component */}
-            <LawyerPanel refreshTrigger={refreshTrigger} lang={lang} />
+            <Suspense fallback={<ComponentLoader />}>
+              <LawyerPanel refreshTrigger={refreshTrigger} lang={lang} />
+            </Suspense>
           </div>
         )}
 
@@ -707,7 +821,9 @@ export default function App() {
       </footer>
 
       {/* Client Chat Modal */}
-      <ClientChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} lang={lang} />
+      <Suspense fallback={null}>
+        <ClientChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} lang={lang} />
+      </Suspense>
 
     </div>
   );
