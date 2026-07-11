@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award } from 'lucide-react';
+import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X } from 'lucide-react';
 import ClientChat from './components/ClientChat';
 import LawyerPanel from './components/LawyerPanel';
 import LawyersHire from './components/LawyersHire';
@@ -16,6 +16,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'client' | 'lawyer'>('client');
   const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news'>('chatbot');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Language selection state
   const [lang, setLang] = useState<'uz' | 'ru'>(() => {
@@ -207,10 +208,10 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div 
                 onClick={handleLogoClick}
-                className="w-9 h-9 bg-[#1e293b] rounded-xl flex items-center justify-center shadow-lg border border-yellow-500/30 cursor-pointer hover:scale-105 active:scale-95 transition-all select-none overflow-hidden"
+                className="w-10 h-10 bg-[#1e293b] rounded-xl flex items-center justify-center shadow-lg border border-yellow-500/30 cursor-pointer hover:scale-105 active:scale-95 transition-all select-none overflow-hidden"
                 title="Secret Unlocker Button"
               >
-                <img src="/favicon.svg" alt="Yurid.uz" className="w-7 h-7 object-contain" />
+                <img src="/favicon.svg" alt="Yurid.uz" className="w-8 h-8 object-contain" />
               </div>
               <div className="select-none">
                 <h1 className="text-sm md:text-base font-sans font-extrabold tracking-tight text-white flex items-center gap-1.5">
@@ -227,16 +228,16 @@ export default function App() {
               </div>
             </div>
 
-            {/* Language & Navigation Right Side Container */}
-            <div className="flex items-center gap-4">
+            {/* Desktop Controls (Hidden on Mobile) */}
+            <div className="hidden md:flex items-center gap-4">
               
               {/* Chat Button with Unread Badge */}
               <button
                 onClick={() => setIsChatOpen(true)}
-                className="relative bg-[#161B22] border border-[#30363D] hover:border-blue-500 hover:text-blue-400 text-gray-400 p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+                className="relative bg-[#161B22] border border-[#30363D] hover:border-blue-500 hover:text-blue-400 text-gray-400 w-11 h-11 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
                 title={lang === 'uz' ? "Advokat bilan chat" : "Чат с адвокатом"}
               >
-                <MessageSquare className="w-4.5 h-4.5" />
+                <MessageSquare className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-blue-600 text-white font-extrabold text-[8px] h-4 min-w-4 px-1 rounded-full flex items-center justify-center border border-[#0D1017]">
                     {unreadCount}
@@ -245,10 +246,10 @@ export default function App() {
               </button>
 
               {/* Language Switcher Button Toggle */}
-              <div className="flex items-center bg-[#161B22] border border-[#30363D] rounded-xl p-0.5">
+              <div className="flex items-center bg-[#161B22] border border-[#30363D] rounded-xl p-0.5 h-11">
                 <button
                   onClick={() => handleLangChange('uz')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer h-full ${
                     lang === 'uz'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-400 hover:text-white'
@@ -258,7 +259,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => handleLangChange('ru')}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer h-full ${
                     lang === 'ru'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-400 hover:text-white'
@@ -272,37 +273,141 @@ export default function App() {
               <nav className="flex space-x-1">
                 <button
                   onClick={() => setActiveTab('client')}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs md:text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
                     activeTab === 'client'
                       ? 'bg-blue-600 text-white shadow-sm'
                       : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                   }`}
                 >
                   <ClipboardList className="w-4 h-4" />
-                  <span className="hidden md:inline">{t.tab_chatbot}</span>
-                  <span className="inline md:hidden">{t.tab_chatbot_short}</span>
+                  <span>{t.tab_chatbot}</span>
                 </button>
                 
                 {isUnlocked && (
                   <button
                     onClick={() => setActiveTab('lawyer')}
-                    className={`flex items-center gap-1.5 px-3 py-2 text-xs md:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-blue-500/20 ${
+                    className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer border border-blue-500/20 ${
                       activeTab === 'lawyer'
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'text-blue-400 hover:text-white hover:bg-blue-950/20'
                     }`}
                   >
                     <ClipboardList className="w-4 h-4 text-blue-400" />
-                    <span className="hidden md:inline">{t.tab_panel}</span>
-                    <span className="inline md:hidden">{t.tab_panel_short}</span>
+                    <span>{t.tab_panel}</span>
                   </button>
                 )}
               </nav>
 
             </div>
 
+            {/* Mobile Actions Container (Visible on Mobile) */}
+            <div className="flex md:hidden items-center gap-2">
+              {/* Chat Button with Unread Badge */}
+              <button
+                onClick={() => setIsChatOpen(true)}
+                className="relative bg-[#161B22] border border-[#30363D] active:border-blue-500 text-gray-300 w-11 h-11 rounded-xl transition-all flex items-center justify-center shrink-0"
+                title={lang === 'uz' ? "Advokat bilan chat" : "Чат с адвокатом"}
+              >
+                <MessageSquare className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white font-extrabold text-[8px] h-4.5 min-w-4.5 px-1 rounded-full flex items-center justify-center border border-[#0D1017]">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Hamburger Toggle Button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="bg-[#161B22] border border-[#30363D] text-gray-300 w-11 h-11 rounded-xl flex items-center justify-center transition-all focus:outline-none"
+                aria-label="Toggle navigation menu"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
+
           </div>
         </div>
+
+        {/* Mobile Dropdown Menu Container */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-[#0D1017] border-t border-[#1F2937] px-4 py-5 space-y-4 animate-fade-in shadow-2xl">
+            {/* Nav Tabs */}
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  setActiveTab('client');
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 text-base font-semibold rounded-xl transition-all ${
+                  activeTab === 'client'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-[#161B22] text-gray-300 border border-[#1F2937] hover:text-white'
+                }`}
+              >
+                <ClipboardList className="w-5 h-5" />
+                <span>{t.tab_chatbot}</span>
+              </button>
+
+              {isUnlocked && (
+                <button
+                  onClick={() => {
+                    setActiveTab('lawyer');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-base font-semibold rounded-xl transition-all ${
+                    activeTab === 'lawyer'
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'bg-[#161B22] text-gray-300 border border-blue-500/20 text-blue-400 hover:text-white'
+                  }`}
+                >
+                  <ClipboardList className="w-5 h-5 text-blue-400" />
+                  <span>{t.tab_panel}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Language Switcher Section */}
+            <div className="pt-3 border-t border-[#1F2937]/50">
+              <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-2">
+                {lang === 'uz' ? "Tilni tanlang" : "Выберите язык"}
+              </p>
+              <div className="grid grid-cols-2 gap-2 bg-[#161B22] border border-[#30363D] rounded-2xl p-1">
+                <button
+                  onClick={() => {
+                    handleLangChange('uz');
+                  }}
+                  className={`py-3 text-sm font-bold rounded-xl transition-all ${
+                    lang === 'uz'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  O'zbekcha (UZ)
+                </button>
+                <button
+                  onClick={() => {
+                    handleLangChange('ru');
+                  }}
+                  className={`py-3 text-sm font-bold rounded-xl transition-all ${
+                    lang === 'ru'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Русский (RU)
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Contact / Support indicator */}
+            <div className="pt-3 border-t border-[#1F2937]/50 text-center">
+              <p className="text-[11px] text-gray-500">
+                {lang === 'uz' ? "Yurid.uz yuridik yordam simulyatori" : "Симулятор юридической помощи Yurid.uz"}
+              </p>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Container */}
@@ -376,10 +481,10 @@ export default function App() {
             </div>
 
             {/* Client sub-tab navigation */}
-            <div className="flex border-b border-gray-800 space-x-6">
+            <div className="flex border-b border-gray-800 space-x-6 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-800/80 scrollbar-track-transparent">
               <button
                 onClick={() => setClientSubTab('chatbot')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'chatbot'
                     ? 'border-blue-500 text-blue-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'
@@ -390,7 +495,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setClientSubTab('hire')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'hire'
                     ? 'border-teal-500 text-teal-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'
@@ -401,7 +506,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setClientSubTab('police')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'police'
                     ? 'border-red-500 text-red-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'
@@ -412,7 +517,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setClientSubTab('profile')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'profile'
                     ? 'border-purple-500 text-purple-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'
@@ -423,7 +528,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setClientSubTab('witnesses')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'witnesses'
                     ? 'border-emerald-500 text-emerald-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'
@@ -434,7 +539,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setClientSubTab('news')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 ${
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'news'
                     ? 'border-amber-500 text-amber-400 font-bold'
                     : 'border-transparent text-gray-400 hover:text-white'

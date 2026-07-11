@@ -785,7 +785,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
         </div>
 
         {/* MENU ITEMS */}
-        <div className="space-y-1.5 pt-2 border-t border-[#1F2937]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1.5 pt-2 border-t border-[#1F2937]">
           <button
             onClick={() => setActiveProfileTab('dashboard')}
             className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
@@ -1172,7 +1172,8 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
               </div>
             ) : (
               <div className="bg-[#161B22] border border-[#1F2937] rounded-xl overflow-hidden max-h-[350px] overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                   <thead>
                     <tr className="bg-[#0D1017] border-b border-[#1F2937] text-gray-400">
                       <th className="p-3">{t.table_interlocutor}</th>
@@ -1195,7 +1196,8 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+          )}
           </div>
         )}
 
