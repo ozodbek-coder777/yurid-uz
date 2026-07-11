@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
-import { saveApplicationToFirebase } from '../utils/firebaseHelper';
+import { saveApplicationToFirebase, getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase, deleteDraftFromFirebase } from '../utils/firebaseHelper';
 
 interface ClientChatProps {
   onSubmissionCreated?: () => void;
@@ -44,6 +44,57 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
 
   const [loading, setLoading] = useState(false);
   const [finalSummary, setFinalSummary] = useState<string | null>(null);
+
+  // Load draft from Firebase on mount
+  useEffect(() => {
+    const loadDraft = async () => {
+      const draftId = getOrCreateDraftId();
+      try {
+        const draft = await getDraftFromFirebase(draftId);
+        if (draft) {
+          console.log("Loaded draft from Firestore:", draft);
+          if (draft.fullName) setFullName(draft.fullName);
+          if (draft.phone) setPhone(draft.phone);
+          if (draft.incidentDate) setIncidentDate(draft.incidentDate);
+          if (draft.incidentDescription) setIncidentDescription(draft.incidentDescription);
+          if (draft.urgency) setUrgency(draft.urgency as any);
+          if (draft.injuries) setInjuries(draft.injuries as any);
+          if (draft.fault) setFault(draft.fault as any);
+          if (draft.step) setStep(draft.step as any);
+        }
+      } catch (e) {
+        console.error("Failed to load draft from Firestore", e);
+      }
+    };
+    loadDraft();
+  }, []);
+
+  // Auto-save draft to Firebase when inputs change
+  useEffect(() => {
+    if (step === 'success') return;
+
+    const draftId = getOrCreateDraftId();
+    const delayDebounceFn = setTimeout(async () => {
+      // Don't save completely empty drafts
+      if (!fullName.trim() && !phone.trim() && !incidentDescription.trim()) return;
+
+      const draftData = {
+        fullName,
+        phone,
+        incidentDate,
+        incidentDescription,
+        urgency,
+        injuries,
+        fault,
+        step,
+      };
+      
+      console.log("Auto-saving draft to Firestore...", draftData);
+      await saveDraftToFirebase(draftId, draftData);
+    }, 1500); // 1.5 seconds debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [fullName, phone, incidentDate, incidentDescription, urgency, injuries, fault, step]);
 
   // Translations
   const t = {
@@ -236,6 +287,12 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       
       // Save to Firebase Firestore
       saveApplicationToFirebase(newSub as any);
+      
+      // Clear auto-saved draft in Firestore
+      const draftId = getOrCreateDraftId();
+      deleteDraftFromFirebase(draftId).catch(err => {
+        console.error("Failed to delete draft after successful submission:", err);
+      });
       
       // Show alert "Arizangiz qabul qilindi!"
       alert("Arizangiz qabul qilindi!");

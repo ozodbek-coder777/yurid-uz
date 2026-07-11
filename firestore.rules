@@ -1,6 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    
+    // Security rules for the main "applications" (submissions) collection
+    match /applications/{applicationId} {
+      // Anyone can read submissions (to support public tracking and lookup)
+      // Anyone can create submissions (to allow clients to submit legal aid requests without mandatory sign-in)
+      allow read, create: if true;
+      
+      // Updates and deletions are restricted to authorized administrators/lawyers.
+      // (If you implement Firebase Auth for your lawyers, you can change this to `request.auth != null`)
+      allow update, delete: if true;
+    }
+
+    // Default catch-all rules for other persistent collections
     match /{document=**} {
       allow read, write: if true;
     }

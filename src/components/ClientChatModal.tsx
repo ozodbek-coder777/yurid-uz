@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Circle, User, ShieldCheck } from 'lucide-react';
 import { getOrCreateChatRoom, sendChatMessage, markRoomMessagesAsRead, getChatRooms, getLawyerSimReply, ChatRoom } from '../utils/chatHelper';
+import { getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase } from '../utils/firebaseHelper';
 
 interface ClientChatModalProps {
   isOpen: boolean;
@@ -19,7 +20,63 @@ export default function ClientChatModal({ isOpen, onClose, lang }: ClientChatMod
   const [guestPhone, setGuestPhone] = useState('');
   const [isGuestSubmitted, setIsGuestSubmitted] = useState(false);
 
+  const [lawyerDrafts, setLawyerDrafts] = useState<{ [lawyerId: string]: string }>({});
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load lawyer drafts from Firebase when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadLawyerDrafts = async () => {
+        const draftId = getOrCreateDraftId();
+        try {
+          const draft = await getDraftFromFirebase(draftId);
+          if (draft && draft.lawyerDrafts) {
+            setLawyerDrafts(draft.lawyerDrafts);
+            // If there's currently a selected lawyer, initialize the input field
+            if (selectedLawyerId && draft.lawyerDrafts[selectedLawyerId]) {
+              setMessageInput(draft.lawyerDrafts[selectedLawyerId]);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load lawyer drafts", e);
+        }
+      };
+      loadLawyerDrafts();
+    }
+  }, [isOpen]);
+
+  // Sync input when switching selected lawyer
+  useEffect(() => {
+    if (selectedLawyerId) {
+      setMessageInput(lawyerDrafts[selectedLawyerId] || '');
+    } else {
+      setMessageInput('');
+    }
+  }, [selectedLawyerId]);
+
+  // Handle draft changes and debounced auto-save
+  const handleInputChange = (val: string) => {
+    setMessageInput(val);
+    if (selectedLawyerId) {
+      setLawyerDrafts(prev => ({
+        ...prev,
+        [selectedLawyerId]: val
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (!isOpen || Object.keys(lawyerDrafts).length === 0) return;
+
+    const draftId = getOrCreateDraftId();
+    const delayDebounceFn = setTimeout(async () => {
+      console.log("Auto-saving lawyer drafts to Firestore...", lawyerDrafts);
+      await saveDraftToFirebase(draftId, { lawyerDrafts });
+    }, 1500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [lawyerDrafts, isOpen]);
 
   // Get list of lawyers
   const [lawyers, setLawyers] = useState<any[]>([]);
@@ -112,6 +169,21 @@ export default function ClientChatModal({ isOpen, onClose, lang }: ClientChatMod
     const clientMsg = messageInput;
     setMessageInput('');
     loadRooms();
+
+    // Clear draft for this lawyer
+    if (selectedLawyerId) {
+      setLawyerDrafts(prev => {
+        const updated = { ...prev };
+        delete updated[selectedLawyerId];
+        
+        const draftId = getOrCreateDraftId();
+        saveDraftToFirebase(draftId, { lawyerDrafts: updated }).catch(err => {
+          console.error("Error clearing sent message draft:", err);
+        });
+        
+        return updated;
+      });
+    }
 
     // 2. Simulate Lawyer Auto-reply if the lawyer isn't replying in real-time
     // (Wait 3 seconds and send auto-response)
@@ -362,7 +434,7 @@ export default function ClientChatModal({ isOpen, onClose, lang }: ClientChatMod
                     <input
                       type="text"
                       value={messageInput}
-                      onChange={(e) => setMessageInput(e.target.value)}
+                      onChange={(e) => handleInputChange(e.target.value)}
                       placeholder={t.type_placeholder}
                       className="flex-1 bg-[#161B22] border border-[#1F2937] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-hidden focus:ring-1 focus:ring-blue-500"
                     />

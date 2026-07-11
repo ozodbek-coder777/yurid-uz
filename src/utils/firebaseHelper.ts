@@ -4,11 +4,13 @@ import {
   collection, 
   doc, 
   setDoc, 
+  getDoc,
   getDocs, 
   updateDoc, 
   deleteDoc, 
   query, 
-  orderBy 
+  orderBy,
+  onSnapshot
 } from 'firebase/firestore';
 
 export enum OperationType {
@@ -155,6 +157,103 @@ export async function deleteApplicationFromFirebase(id: string): Promise<boolean
     } catch (err) {
       console.error("Firebase-dan o'chirishda xatolik yuz berdi:", err);
     }
+    return false;
+  }
+}
+
+/**
+ * 5. Real-time Firebase-dan arizalarni tinglash funksiyasi
+ */
+export function onSnapshotApplications(callback: (apps: Submission[]) => void): () => void {
+  const path = 'applications';
+  const q = query(collection(db, path), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const apps: Submission[] = [];
+    snapshot.forEach(docSnap => {
+      apps.push(docSnap.data() as Submission);
+    });
+    console.log(`⚡ [Real-time] Firestore-dan ${apps.length}ta ariza yangilandi.`);
+    localStorage.setItem('submissions_list', JSON.stringify(apps));
+    callback(apps);
+  }, (error) => {
+    console.error("Firebase onSnapshot tinglashda xatolik:", error);
+  });
+}
+
+export interface ChatDraft {
+  id: string;
+  fullName?: string;
+  phone?: string;
+  incidentDate?: string;
+  incidentDescription?: string;
+  urgency?: string;
+  injuries?: string;
+  fault?: string;
+  step?: string;
+  lawyerDrafts?: { [lawyerId: string]: string };
+  updatedAt: string;
+}
+
+/**
+ * 6. Foydalanuvchining local yoki global draft identifikatorini olish yoki yaratish
+ */
+export function getOrCreateDraftId(): string {
+  let draftId = localStorage.getItem('yurid_draft_id');
+  if (!draftId) {
+    draftId = 'draft_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
+    localStorage.setItem('yurid_draft_id', draftId);
+  }
+  return draftId;
+}
+
+/**
+ * 7. Draft ma'lumotlarini Firebase Firestore ga saqlash
+ */
+export async function saveDraftToFirebase(draftId: string, draftData: Partial<ChatDraft>): Promise<boolean> {
+  const path = 'chat_drafts';
+  try {
+    const docRef = doc(db, path, draftId);
+    await setDoc(docRef, {
+      ...draftData,
+      id: draftId,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Error saving draft to Firestore:", error);
+    return false;
+  }
+}
+
+/**
+ * 8. Draft ma'lumotlarini Firebase Firestore dan yuklash
+ */
+export async function getDraftFromFirebase(draftId: string): Promise<ChatDraft | null> {
+  const path = 'chat_drafts';
+  try {
+    const docRef = doc(db, path, draftId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as ChatDraft;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting draft from Firestore:", error);
+    return null;
+  }
+}
+
+/**
+ * 9. Draft ma'lumotlarini Firebase Firestore dan o'chirish (ariza topshirilgach yoki bekor qilingach)
+ */
+export async function deleteDraftFromFirebase(draftId: string): Promise<boolean> {
+  const path = 'chat_drafts';
+  try {
+    const docRef = doc(db, path, draftId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error("Error deleting draft from Firestore:", error);
     return false;
   }
 }

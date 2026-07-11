@@ -39,7 +39,7 @@ import {
   Newspaper
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
-import { getApplicationsFromFirebase, updateApplicationInFirebase, deleteApplicationFromFirebase, saveApplicationToFirebase } from '../utils/firebaseHelper';
+import { getApplicationsFromFirebase, updateApplicationInFirebase, deleteApplicationFromFirebase, saveApplicationToFirebase, onSnapshotApplications } from '../utils/firebaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
 import AdminPoliceReports from './AdminPoliceReports';
@@ -722,14 +722,23 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchSubmissions(true);
-      // Poll every 5 seconds for new submissions from other devices
-      const interval = setInterval(() => {
-        fetchSubmissions(false);
-      }, 5000);
-      return () => clearInterval(interval);
+      setLoading(true);
+      const unsubscribe = onSnapshotApplications((apps) => {
+        setSubmissions(apps || []);
+        setLoading(false);
+
+        // Sync selected detail view if already open
+        if (selectedSub) {
+          const updated = apps.find((s: Submission) => s.id === selectedSub.id);
+          if (updated) {
+            setSelectedSub(updated);
+            setEditingNotes(updated.notes || '');
+          }
+        }
+      });
+      return () => unsubscribe();
     }
-  }, [isAuthenticated, refreshTrigger]);
+  }, [isAuthenticated, refreshTrigger, selectedSub?.id]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
