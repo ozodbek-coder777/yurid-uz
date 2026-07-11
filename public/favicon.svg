@@ -1,87 +1,112 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
     <!-- Background Gradient matching premium dark theme -->
-    <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="75%">
       <stop offset="0%" stop-color="#1e293b" />
       <stop offset="100%" stop-color="#0f172a" />
     </radialGradient>
     
-    <!-- Gold Gradient for the Emblem -->
+    <!-- Rich Gold Gradient for the Monogram & Law Elements -->
     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" />
-      <stop offset="50%" stop-color="#f59e0b" />
-      <stop offset="100%" stop-color="#b45309" />
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="30%" stop-color="#fbbf24" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#854d0e" />
     </linearGradient>
 
-    <!-- Metallic Highlight Gradient -->
-    <linearGradient id="highlightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.5" />
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    <!-- Platinum Accent Gradient for high premium look -->
+    <linearGradient id="platGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="50%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#ffffff" />
     </linearGradient>
 
-    <!-- Subtle Glow Shadow -->
+    <!-- Subtle Outer Glow -->
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="10" result="blur" />
+      <feGaussianBlur stdDeviation="8" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
 
   <!-- Background Base with Rounded Corners -->
-  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad)" />
 
-  <!-- Outer Shield Border (Highly Minimalist & Symmetrical) -->
-  <path d="M 120,120 
-           C 200,90 312,90 392,120 
-           C 392,260 370,360 256,430 
-           C 142,360 120,260 120,120 Z" 
+  <!-- Outer Protective Tech Shield (Clean, Sleek Geometric Borders) -->
+  <path d="M 140,110 
+           L 256,70 
+           L 372,110 
+           C 372,240 350,355 256,435 
+           C 162,355 140,240 140,110 Z" 
         fill="none" 
         stroke="url(#goldGrad)" 
-        stroke-width="14" 
+        stroke-width="10" 
         stroke-linecap="round" 
         stroke-linejoin="round"
+        opacity="0.85"
         filter="url(#glow)" />
 
-  <!-- Scale Column (Center Pillar) -->
-  <g transform="translate(256, 260)" fill="url(#goldGrad)">
-    <!-- Pillar Base -->
-    <path d="M -30,120 L 30,120 L 20,105 L -20,105 Z" />
-    <!-- Pillar Shaft -->
-    <rect x="-8" y="-90" width="16" height="200" rx="4" />
-    <!-- Pillar Cap -->
-    <circle cx="0" cy="-105" r="14" />
+  <!-- Inner Concentric Shield Line for depth -->
+  <path d="M 160,130 
+           L 256,96 
+           L 352,130 
+           C 352,240 332,335 256,405 
+           C 180,335 160,240 160,130 Z" 
+        fill="none" 
+        stroke="url(#platGrad)" 
+        stroke-width="3" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        opacity="0.3" />
+
+  <!-- Center-piece: Stylized legal "Y" monogram (Yurid.uz) which integrates a law book, a sword of justice, and a strong pillar -->
+  <g transform="translate(256, 250)" filter="url(#glow)">
+    <!-- 1. The Central Pillar Stem (Represents Law and Stability) -->
+    <!-- Beautifully tapered vertical column with step details -->
+    <path d="M -16,10 L 16,10 L 12,130 L -12,130 Z" fill="url(#goldGrad)" />
+    <!-- Pillar Base Baseplates -->
+    <rect x="-30" y="130" width="60" height="12" rx="3" fill="url(#goldGrad)" />
+    <rect x="-42" y="142" width="84" height="10" rx="2" fill="url(#platGrad)" opacity="0.9" />
+
+    <!-- 2. Symmetrical Open Book / Falcon Wings forming the top of the "Y" (Trust and Transparency) -->
+    <!-- Left Wing (Sleek geometric blade pointing up-left) -->
+    <path d="M -16,10 
+             L -135,-95 
+             C -135,-95 -100,-115 -55,-85 
+             L -10,-45
+             Z" 
+          fill="url(#goldGrad)" />
+    <!-- Highlight strip inside Left Wing for 3D depth -->
+    <path d="M -22,0 
+             L -115,-80 
+             L -100,-88
+             L -18,-18
+             Z" 
+          fill="url(#platGrad)" opacity="0.35" />
+
+    <!-- Right Wing (Sleek geometric blade pointing up-right) -->
+    <path d="M 16,10 
+             L 135,-95 
+             C 135,-95 100,-115 55,-85 
+             L 10,-45
+             Z" 
+          fill="url(#goldGrad)" />
+    <!-- Highlight strip inside Right Wing for 3D depth -->
+    <path d="M 22,0 
+             L 115,-80 
+             L 100,-88
+             L 18,-18
+             Z" 
+          fill="url(#platGrad)" opacity="0.35" />
+
+    <!-- 3. Central Decisive Point of Trust -->
+    <!-- Elegant Diamond emblem at the focal core of the monogram, symbolizing integrity -->
+    <polygon points="0,-35 15,-15 0,5 -15,-15" fill="url(#platGrad)" />
+    <polygon points="0,-30 10,-15 0,0 -10,-15" fill="url(#goldGrad)" />
     
-    <!-- Balance Beam (Crossbar) -->
-    <path d="M -110,-70 C -60,-82 60,-82 110,-70 C 115,-68 115,-62 110,-60 C 60,-48 -60,-48 -110,-60 C -115,-62 -115,-68 -110,-70 Z" />
-    
-    <!-- Balance Axis Pins -->
-    <circle cx="0" cy="-65" r="5" fill="#1e293b" />
-    <circle cx="-100" cy="-65" r="4" />
-    <circle cx="100" cy="-65" r="4" />
-
-    <!-- Left Scale Plate & Cords -->
-    <g transform="translate(-100, -65)">
-      <!-- Left Cord 1 -->
-      <line x1="0" y1="0" x2="-25" y2="90" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
-      <!-- Left Cord 2 -->
-      <line x1="0" y1="0" x2="25" y2="90" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
-      <!-- Left Plate -->
-      <path d="M -35,90 C -35,105 35,105 35,90 Z" />
-    </g>
-
-    <!-- Right Scale Plate & Cords -->
-    <g transform="translate(100, -65)">
-      <!-- Right Cord 1 -->
-      <line x1="0" y1="0" x2="-25" y2="90" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
-      <!-- Right Cord 2 -->
-      <line x1="0" y1="0" x2="25" y2="90" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round" />
-      <!-- Right Plate -->
-      <path d="M -35,90 C -35,105 35,105 35,90 Z" />
-    </g>
-
-    <!-- Center Accent Diamond -->
-    <polygon points="0,-45 8,-35 0,-25 -8,-35" fill="url(#goldGrad)" />
+    <!-- Top Crest Crown Element (Geometric, representative of high authority/state registry) -->
+    <path d="M -20,-140 L 0,-155 L 20,-140 L 10,-125 L -10,-125 Z" fill="url(#goldGrad)" />
   </g>
-  
-  <!-- Subtle Sleek Diagonal Reflection Layer -->
-  <path d="M 125,125 C 220,105 320,120 387,140 C 375,180 320,250 180,180 Z" fill="url(#highlightGrad)" opacity="0.12" />
+
+  <!-- Elegant Diagonal Shimmer / Light Reflection -->
+  <path d="M 145,115 C 240,95 330,110 387,130 C 375,170 300,240 180,180 Z" fill="#ffffff" opacity="0.08" />
 </svg>

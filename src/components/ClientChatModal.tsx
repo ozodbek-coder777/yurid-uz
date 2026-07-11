@@ -245,8 +245,8 @@ export default function ClientChatModal({ isOpen, onClose, lang }: ClientChatMod
         {/* Header */}
         <div className="bg-[#161B22] border-b border-[#1F2937] px-6 py-4 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600/10 text-blue-400 border border-blue-500/20 rounded-xl flex items-center justify-center">
-              <MessageSquare className="w-5 h-5" />
+            <div className="w-10 h-10 bg-[#1e293b] border border-yellow-500/20 rounded-xl flex items-center justify-center overflow-hidden">
+              <img src="/favicon.svg" alt="Yurid.uz" className="w-8 h-8 object-contain" />
             </div>
             <div>
               <h3 className="font-sans font-bold text-white text-sm">{t.title}</h3>

@@ -314,8 +314,8 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       {/* Header */}
       <div className="bg-[#11141B] px-6 py-5 flex items-center justify-between border-b border-[#1F2937] text-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 text-blue-400">
-            <ClipboardList className="w-5.5 h-5.5" />
+          <div className="w-10 h-10 rounded-xl bg-[#1e293b] flex items-center justify-center border border-yellow-500/20 overflow-hidden">
+            <img src="/favicon.svg" alt="Yurid.uz" className="w-8 h-8 object-contain" />
           </div>
           <div>
             <h3 className="font-sans font-semibold text-white text-sm md:text-base leading-tight flex items-center gap-1.5">
@@ -352,8 +352,8 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       {step === 'info' && (
         <div className="p-8 md:p-10 flex-1 flex flex-col justify-center space-y-6 bg-[#0D1017]">
           <div className="text-center space-y-2">
-            <div className="mx-auto w-14 h-14 bg-blue-600/10 text-blue-400 rounded-2xl flex items-center justify-center shadow-inner">
-              <ShieldAlert className="w-7 h-7" />
+            <div className="mx-auto w-16 h-16 bg-[#1e293b] border border-yellow-500/20 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg mb-2">
+              <img src="/favicon.svg" alt="Yurid.uz" className="w-12 h-12 object-contain" />
             </div>
             <h4 className="text-xl font-bold font-sans text-white mt-2">{t.info_title}</h4>
             <p className="text-sm text-gray-400 max-w-md mx-auto">

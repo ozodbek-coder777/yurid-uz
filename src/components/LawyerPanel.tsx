@@ -1101,8 +1101,8 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8" id="lawyer-login-section">
         <div className="max-w-md w-full space-y-8 bg-[#0D1017] p-8 md:p-10 rounded-3xl border border-[#1F2937] shadow-xl">
           <div className="text-center">
-            <div className="mx-auto h-12 w-12 bg-blue-600/10 border border-blue-500/30 rounded-2xl flex items-center justify-center">
-              <Lock className="h-6 w-6 text-blue-400" />
+            <div className="mx-auto h-16 w-16 bg-[#1e293b] border border-yellow-500/20 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg mb-2">
+              <img src="/favicon.svg" alt="Yurid.uz" className="h-12 w-12 object-contain" />
             </div>
             <h2 className="mt-6 text-center text-2xl font-bold tracking-tight text-white font-sans">
               {t.login_title}

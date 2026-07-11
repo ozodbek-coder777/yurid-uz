@@ -207,10 +207,10 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div 
                 onClick={handleLogoClick}
-                className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg border border-blue-500/30 cursor-pointer hover:scale-105 active:scale-95 transition-all select-none"
+                className="w-9 h-9 bg-[#1e293b] rounded-xl flex items-center justify-center shadow-lg border border-yellow-500/30 cursor-pointer hover:scale-105 active:scale-95 transition-all select-none overflow-hidden"
                 title="Secret Unlocker Button"
               >
-                <Scale className="w-5 h-5 text-white" />
+                <img src="/favicon.svg" alt="Yurid.uz" className="w-7 h-7 object-contain" />
               </div>
               <div className="select-none">
                 <h1 className="text-sm md:text-base font-sans font-extrabold tracking-tight text-white flex items-center gap-1.5">
