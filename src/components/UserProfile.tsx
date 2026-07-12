@@ -8,8 +8,7 @@ import {
 import { getBlacklistedUser } from '../utils/blacklist';
 import PersonalStats from './PersonalStats';
 import { getNews } from '../utils/newsHelper';
-import { getApplicationsFromFirebase, onSnapshotApplications, saveUserProfileToFirebase, getUserProfilesFromFirebase, onSnapshotUserProfiles, updateUserProfileInFirebase, deleteUserProfileFromFirebase, saveGoogleUserToFirestore } from '../utils/firebaseHelper';
-import { googleSignIn } from '../lib/firebase';
+import { getApplicationsFromFirebase, onSnapshotApplications, saveUserProfileToFirebase, getUserProfilesFromFirebase, onSnapshotUserProfiles, updateUserProfileInFirebase, deleteUserProfileFromFirebase } from '../utils/firebaseHelper';
 import { NewsItem } from '../types';
 
 interface UserProfileProps {
@@ -245,99 +244,6 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
   const [myLawyers, setMyLawyers] = useState<any[]>([]);
   const [myMessages, setMyMessages] = useState<any[]>([]);
   const [blacklistError, setBlacklistError] = useState<string | null>(null);
-
-  // Sync state with global app changes (like logging out from header)
-  useEffect(() => {
-    const handleUserUpdate = () => {
-      const saved = localStorage.getItem('logged_in_user');
-      if (saved) {
-        try {
-          setCurrentUser(JSON.parse(saved));
-        } catch (e) {
-          setCurrentUser(null);
-        }
-      } else {
-        setCurrentUser(null);
-      }
-    };
-    window.addEventListener('yurid_user_updated', handleUserUpdate);
-    window.addEventListener('storage', handleUserUpdate);
-    return () => {
-      window.removeEventListener('yurid_user_updated', handleUserUpdate);
-      window.removeEventListener('storage', handleUserUpdate);
-    };
-  }, []);
-
-  const handleGoogleSignInClick = async () => {
-    setAuthError('');
-    setBlacklistError(null);
-    try {
-      const result = await googleSignIn();
-      if (!result) {
-        setAuthError(lang === 'uz' ? "Google orqali kirish bekor qilindi yoki xatolik yuz berdi." : "Вход через Google был отменен или произошла ошибка.");
-        return;
-      }
-      const user = result.user;
-
-      // Check blacklist
-      const blacklisted = getBlacklistedUser(user.email || '') || getBlacklistedUser(user.displayName || '');
-      if (blacklisted) {
-        const reasonStr = blacklisted.admin_izoh || blacklisted.sabab;
-        setBlacklistError(t.blacklist_reason.replace('{reason}', reasonStr));
-        return;
-      }
-
-      const googleUserObj = {
-        id: user.uid,
-        ism: user.displayName || "Google Foydalanuvchisi",
-        email: user.email || "",
-        rasm: user.photoURL || null,
-        sana: new Date().toISOString().split('T')[0]
-      };
-
-      // 1. Save user to firestore 'users' collection (Req 3)
-      await saveGoogleUserToFirestore(googleUserObj);
-
-      // 2. Sync to 'user_profiles' for compatibility with all existing application features (Req 4)
-      const profilesRaw = localStorage.getItem('user_profiles') || '[]';
-      let profiles = [];
-      try {
-        profiles = JSON.parse(profilesRaw);
-      } catch (e) {
-        profiles = [];
-      }
-
-      let existingProfile = profiles.find((p: any) => p.email && p.email.trim().toLowerCase() === googleUserObj.email.toLowerCase());
-      if (!existingProfile) {
-        existingProfile = {
-          id: googleUserObj.id,
-          ism: googleUserObj.ism,
-          telefon: user.phoneNumber || "",
-          email: googleUserObj.email,
-          manzil: "",
-          parol: "",
-          rasm: googleUserObj.rasm,
-          sana: googleUserObj.sana
-        };
-        profiles.push(existingProfile);
-        localStorage.setItem('user_profiles', JSON.stringify(profiles));
-        await saveUserProfileToFirebase(existingProfile);
-      } else {
-        existingProfile.rasm = googleUserObj.rasm;
-        existingProfile.ism = googleUserObj.ism;
-        localStorage.setItem('user_profiles', JSON.stringify(profiles));
-        await updateUserProfileInFirebase(existingProfile.id, existingProfile);
-      }
-
-      // 3. Set logged in state (Req 5)
-      localStorage.setItem('logged_in_user', JSON.stringify(existingProfile));
-      setCurrentUser(existingProfile);
-      window.dispatchEvent(new Event('yurid_user_updated'));
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      setAuthError(error.message || String(error));
-    }
-  };
 
   // Synchronize user profiles in real-time across devices
   useEffect(() => {
@@ -735,28 +641,6 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
             <span>{authError}</span>
           </div>
         )}
-
-        {/* Google Sign-In button with standard elegant design (Req 2) */}
-        <button
-          type="button"
-          onClick={handleGoogleSignInClick}
-          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-gray-900 font-bold text-sm py-3 px-4 rounded-xl border border-gray-200 transition-all shadow-sm cursor-pointer"
-        >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-          </svg>
-          <span>{lang === 'uz' ? "Google orqali kirish" : "Войти через Google"}</span>
-        </button>
-
-        {/* Beautiful sleek modern divider */}
-        <div className="flex items-center gap-3">
-          <div className="h-px bg-[#1F2937] flex-1"></div>
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{lang === 'uz' ? "Yoki" : "Или"}</span>
-          <div className="h-px bg-[#1F2937] flex-1"></div>
-        </div>
 
         {isLoginMode ? (
           // LOGIN FORM

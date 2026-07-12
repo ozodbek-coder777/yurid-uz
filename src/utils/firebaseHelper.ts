@@ -472,35 +472,3 @@ export function onSnapshotChatRooms(callback: (rooms: ChatRoom[]) => void): () =
   });
 }
 
-/**
- * 23. Google foydalanuvchisini Firestore-dagi "users" collection-iga saqlash
- */
-export async function saveGoogleUserToFirestore(user: { id: string; ism: string; email: string; rasm: string | null; sana: string }): Promise<boolean> {
-  const path = 'users';
-  try {
-    console.log("Google foydalanuvchisi Firestore 'users' collection-ga saqlanmoqda...", user.id);
-    await setDoc(doc(db, path, user.id), user);
-    return true;
-  } catch (error) {
-    console.error("Google foydalanuvchisini 'users'ga saqlashda xatolik:", error);
-    return false;
-  }
-}
-
-/**
- * 24. Firestore-dagi "users" collection-idan foydalanuvchini olish
- */
-export async function getGoogleUserFromFirestore(id: string): Promise<any | null> {
-  const path = 'users';
-  try {
-    const docSnap = await getDoc(doc(db, path, id));
-    if (docSnap.exists()) {
-      return docSnap.data();
-    }
-    return null;
-  } catch (error) {
-    console.error("Google foydalanuvchisini 'users'dan olishda xatolik:", error);
-    return null;
-  }
-}
-
