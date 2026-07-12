@@ -124,6 +124,7 @@ export default function NewsSection({ lang, onReadNewsId, onClearReadNewsId }: N
                 alt={activeNews.sarlavha} 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
             </div>
           )}
@@ -239,6 +240,7 @@ export default function NewsSection({ lang, onReadNewsId, onClearReadNewsId }: N
                           alt={item.sarlavha} 
                           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
                         />
                         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                           <span className="bg-blue-600/90 text-white font-bold text-[10px] px-2.5 py-1 rounded-lg backdrop-blur-xs">

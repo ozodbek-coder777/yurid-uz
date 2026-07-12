@@ -1102,7 +1102,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         <div className="max-w-md w-full space-y-8 bg-[#0D1017] p-8 md:p-10 rounded-3xl border border-[#1F2937] shadow-xl">
           <div className="text-center">
             <div className="mx-auto h-16 w-16 bg-[#1e293b] border border-yellow-500/20 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg mb-2">
-              <img src="/favicon.svg" alt="Yurid.uz" className="h-12 w-12 object-contain" />
+              <img src="/favicon.svg" alt="Yurid.uz" className="h-12 w-12 object-contain" loading="lazy" />
             </div>
             <h2 className="mt-6 text-center text-2xl font-bold tracking-tight text-white font-sans">
               {t.login_title}
@@ -1256,7 +1256,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           {gmailUser ? (
             <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-2 text-xs">
               {gmailUser.photoURL ? (
-                <img src={gmailUser.photoURL} alt="Google Avatar" className="w-4.5 h-4.5 rounded-full border border-blue-500/30" referrerPolicy="no-referrer" />
+                <img src={gmailUser.photoURL} alt="Google Avatar" className="w-4.5 h-4.5 rounded-full border border-blue-500/30" referrerPolicy="no-referrer" loading="lazy" />
               ) : (
                 <div className="w-4.5 h-4.5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px]">G</div>
               )}

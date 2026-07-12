@@ -562,10 +562,10 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
 
   // Preset avatars for beautiful mockup
   const avatars = [
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=60&ixlib=rb-4.0.3"
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=40&fm=webp&ixlib=rb-4.0.3",
+    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=40&fm=webp&ixlib=rb-4.0.3",
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=40&fm=webp&ixlib=rb-4.0.3",
+    "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=40&fm=webp&ixlib=rb-4.0.3"
   ];
 
   if (!currentUser) {
@@ -752,6 +752,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
                 alt="Profile" 
                 className="w-20 h-20 rounded-2xl object-cover border-2 border-blue-500"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -967,7 +968,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
                       profilePic === avUrl ? 'border-blue-500 scale-110 shadow-md' : 'border-transparent opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <img src={avUrl} alt="Avatar option" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={avUrl} alt="Avatar option" className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                   </button>
                 ))}
                 {profilePic && (

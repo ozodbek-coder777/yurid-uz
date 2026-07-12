@@ -2,6 +2,17 @@
 <html lang="uz">
   <head>
     <meta charset="UTF-8" />
+    <!-- Preconnect to Font servers for instant resolution -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Asynchronous stylesheet loading for Google Fonts to prevent render blocking -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+    </noscript>
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -37,10 +48,12 @@
   <body>
     <div id="root"></div>
     <!-- Load config.js and gemini.js properly without triggering Vite build-time Rollup checks -->
-    <script src="/config.js"></script>
-    <script src="/gemini.js"></script>
+    <script src="/config.js" defer></script>
+    <script src="/gemini.js" defer></script>
     <script>
-      console.log("Config va Gemini skriptlari muvaffaqiyatli yuklandi. API key:", window.GEMINI_API_KEY ? "Mavjud" : "Yo'q");
+      window.addEventListener('load', function() {
+        console.log("Config va Gemini skriptlari muvaffaqiyatli yuklandi. API key:", window.GEMINI_API_KEY ? "Mavjud" : "Yo'q");
+      });
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
