@@ -163,8 +163,8 @@ export default function App() {
 
   // Dynamic SEO Title and Meta Description Update based on tab and language
   useEffect(() => {
-    let title = "Yurid.uz - O'zbekistondagi Onlayn Yuridik Yordam";
-    let desc = "Eng ilg'or onlayn yuridik yordam simulyatori va advokatlar platformasi.";
+    let title = "Yurid.uz - O'zbekistondagi Onlayn Yuridik Yordam va Advokatlar Platformasi";
+    let desc = "Yurid.uz - O'zbekistondagi eng ilg'or onlayn yuridik yordam simulyatori va advokatlar platformasi. AI yuridik maslahat, advokat yollash, politsiyaga ariza yuborish va huquqiy yangiliklar.";
     
     if (activeTab === 'lawyer') {
       title = lang === 'uz' 

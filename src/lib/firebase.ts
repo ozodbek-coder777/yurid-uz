@@ -9,12 +9,12 @@ import {
   onAuthStateChanged,
   User
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import appletConfig from "../../firebase-applet-config.json";
 
 // Re-export modular functions as requested by the user
 export { initializeApp, getApps, getApp };
-export { getFirestore };
+export { getFirestore, initializeFirestore };
 
 // Extend global window interface for Firebase debug/testing scripts and documentation parity
 declare global {
@@ -50,8 +50,8 @@ const firebaseConfig = {
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId 
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app);
+  ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId)
+  : initializeFirestore(app, { experimentalForceLongPolling: true });
 
 // Keep track of recaptcha verifier
 let recaptchaVerifier: RecaptchaVerifier | null = null;
