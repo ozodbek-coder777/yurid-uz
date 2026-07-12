@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Edit2, Trash2, X, Check, Mail, Phone, MapPin, Lock, Calendar, Users } from 'lucide-react';
+import { getUserProfilesFromFirebase, onSnapshotUserProfiles, updateUserProfileInFirebase, deleteUserProfileFromFirebase, saveUserProfileToFirebase } from '../utils/firebaseHelper';
 
 interface RegisteredUser {
   id: string;
@@ -22,49 +23,48 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
   const [editingUser, setEditingUser] = useState<RegisteredUser | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  // Load users from localStorage
-  const loadUsers = () => {
-    const raw = localStorage.getItem('user_profiles');
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setUsers(parsed);
-          return;
-        }
-      } catch (e) {
-        console.error('Failed to parse user_profiles', e);
-      }
-    }
-    // Set some defaults if empty so there is data to manage
-    const defaultUsers: RegisteredUser[] = [
-      {
-        id: 'u_client1',
-        ism: 'Sardor Rahimov',
-        telefon: '+998 93 456 12 34',
-        email: 'sardor@mail.uz',
-        manzil: 'Toshkent sh., Chilonzor tumani',
-        parol: 'user123',
-        rasm: null,
-        sana: '2026-06-15'
-      },
-      {
-        id: 'u_client2',
-        ism: 'Madina Umarova',
-        telefon: '+998 90 987 65 43',
-        email: 'madina@gmail.com',
-        manzil: 'Samarqand sh., Dahbed ko\'chasi',
-        parol: 'madina99',
-        rasm: null,
-        sana: '2026-06-20'
-      }
-    ];
-    localStorage.setItem('user_profiles', JSON.stringify(defaultUsers));
-    setUsers(defaultUsers);
-  };
-
+  // Load users from Firestore and listen real-time
   useEffect(() => {
-    loadUsers();
+    getUserProfilesFromFirebase().then((firebaseUsers) => {
+      if (firebaseUsers.length === 0) {
+        const defaultUsers: RegisteredUser[] = [
+          {
+            id: 'u_client1',
+            ism: 'Sardor Rahimov',
+            telefon: '+998 93 456 12 34',
+            email: 'sardor@mail.uz',
+            manzil: 'Toshkent sh., Chilonzor tumani',
+            parol: 'user123',
+            rasm: null,
+            sana: '2026-06-15'
+          },
+          {
+            id: 'u_client2',
+            ism: 'Madina Umarova',
+            telefon: '+998 90 987 65 43',
+            email: 'madina@gmail.com',
+            manzil: 'Samarqand sh., Dahbed ko\'chasi',
+            parol: 'madina99',
+            rasm: null,
+            sana: '2026-06-20'
+          }
+        ];
+        defaultUsers.forEach(u => saveUserProfileToFirebase(u));
+        setUsers(defaultUsers);
+      } else {
+        setUsers(firebaseUsers);
+      }
+    }).catch(err => {
+      console.error("Failed to load users from Firestore", err);
+    });
+
+    const unsubscribe = onSnapshotUserProfiles((data) => {
+      if (data && data.length > 0) {
+        setUsers(data);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Filtered users
@@ -85,6 +85,7 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
     
     if (!window.confirm(confirmMsg)) return;
 
+    deleteUserProfileFromFirebase(id);
     const updated = users.filter(u => u.id !== id);
     setUsers(updated);
     localStorage.setItem('user_profiles', JSON.stringify(updated));
@@ -107,6 +108,7 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
       return;
     }
 
+    updateUserProfileInFirebase(editingUser.id, editingUser);
     const updated = users.map(u => u.id === editingUser.id ? editingUser : u);
     setUsers(updated);
     localStorage.setItem('user_profiles', JSON.stringify(updated));

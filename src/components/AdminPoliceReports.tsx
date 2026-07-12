@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { PoliceReport } from '../types';
+import { getPoliceReportsFromFirebase, onSnapshotPoliceReports, updatePoliceReportInFirebase, deletePoliceReportFromFirebase } from '../utils/firebaseHelper';
 
 interface AdminPoliceReportsProps {
   lang: 'uz' | 'ru';
@@ -25,20 +26,20 @@ export default function AdminPoliceReports({ lang }: AdminPoliceReportsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReport, setSelectedReport] = useState<PoliceReport | null>(null);
 
-  // Load reports
+  // Load reports and subscribe to Firestore in real-time
   useEffect(() => {
-    const saved = localStorage.getItem('police_reports_list');
-    if (saved) {
-      try {
-        setReports(JSON.parse(saved));
-      } catch (e) {
-        setReports([]);
+    getPoliceReportsFromFirebase().catch(err => console.error("Initial load of police reports failed:", err));
+    const unsubscribe = onSnapshotPoliceReports((data) => {
+      if (data) {
+        setReports(data);
       }
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
   // Save changes
   const updateReportStatus = (id: string, newStatus: string) => {
+    updatePoliceReportInFirebase(id, { status: newStatus as any });
     const updated = reports.map(r => r.id === id ? { ...r, status: newStatus as any } : r);
     setReports(updated);
     localStorage.setItem('police_reports_list', JSON.stringify(updated));
@@ -55,6 +56,7 @@ export default function AdminPoliceReports({ lang }: AdminPoliceReportsProps) {
     );
     if (!confirmDelete) return;
 
+    deletePoliceReportFromFirebase(id);
     const updated = reports.filter(r => r.id !== id);
     setReports(updated);
     localStorage.setItem('police_reports_list', JSON.stringify(updated));

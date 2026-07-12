@@ -1,4 +1,4 @@
-import { Submission } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -257,3 +257,250 @@ export async function deleteDraftFromFirebase(draftId: string): Promise<boolean>
     return false;
   }
 }
+
+/**
+ * 10. Foydalanuvchi profillarini Firestore-ga saqlash
+ */
+export async function saveUserProfileToFirebase(user: RegisteredUser): Promise<boolean> {
+  const path = 'user_profiles';
+  try {
+    console.log("Foydalanuvchi profili Firestore-ga saqlanmoqda...", user.id);
+    await setDoc(doc(db, path, user.id), user);
+    return true;
+  } catch (error) {
+    console.error("Foydalanuvchini Firestore-ga saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 11. Barcha foydalanuvchi profillarini Firestore-dan olish
+ */
+export async function getUserProfilesFromFirebase(): Promise<RegisteredUser[]> {
+  const path = 'user_profiles';
+  try {
+    console.log("Foydalanuvchilar Firestore-dan yuklanmoqda...");
+    const snapshot = await getDocs(collection(db, path));
+    const users: RegisteredUser[] = [];
+    snapshot.forEach(docSnap => {
+      users.push(docSnap.data() as RegisteredUser);
+    });
+    // Keshni ham yangilaymiz
+    localStorage.setItem('user_profiles', JSON.stringify(users));
+    return users;
+  } catch (error) {
+    console.error("Foydalanuvchilarni Firestore-dan olishda xatolik:", error);
+    return JSON.parse(localStorage.getItem('user_profiles') || '[]');
+  }
+}
+
+/**
+ * 12. Real-time foydalanuvchilarni tinglash
+ */
+export function onSnapshotUserProfiles(callback: (users: RegisteredUser[]) => void): () => void {
+  const path = 'user_profiles';
+  return onSnapshot(collection(db, path), (snapshot) => {
+    const users: RegisteredUser[] = [];
+    snapshot.forEach(docSnap => {
+      users.push(docSnap.data() as RegisteredUser);
+    });
+    localStorage.setItem('user_profiles', JSON.stringify(users));
+    callback(users);
+  }, (error) => {
+    console.error("Foydalanuvchilarni tinglashda xatolik:", error);
+  });
+}
+
+/**
+ * 13. Foydalanuvchi profilini Firestore-da yangilash
+ */
+export async function updateUserProfileInFirebase(id: string, updates: Partial<RegisteredUser>): Promise<boolean> {
+  const path = 'user_profiles';
+  try {
+    await updateDoc(doc(db, path, id), updates);
+    return true;
+  } catch (error) {
+    console.error("Foydalanuvchini Firestore-da yangilashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 14. Foydalanuvchi profilini Firestore-dan o'chirish
+ */
+export async function deleteUserProfileFromFirebase(id: string): Promise<boolean> {
+  const path = 'user_profiles';
+  try {
+    await deleteDoc(doc(db, path, id));
+    return true;
+  } catch (error) {
+    console.error("Foydalanuvchini Firestore-dan o'chirishda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 15. Ichki ishlar arizasini (police report) Firestore-ga saqlash
+ */
+export async function savePoliceReportToFirebase(report: PoliceReport): Promise<boolean> {
+  const path = 'police_reports';
+  try {
+    console.log("Ichki ishlar arizasi Firestore-ga saqlanmoqda...", report.id);
+    await setDoc(doc(db, path, report.id), report);
+    return true;
+  } catch (error) {
+    console.error("Ichki ishlar arizasini Firestore-ga saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 16. Barcha ichki ishlar arizalarini Firestore-dan olish
+ */
+export async function getPoliceReportsFromFirebase(): Promise<PoliceReport[]> {
+  const path = 'police_reports';
+  try {
+    console.log("Ichki ishlar arizalari Firestore-dan yuklanmoqda...");
+    const snapshot = await getDocs(collection(db, path));
+    const reports: PoliceReport[] = [];
+    snapshot.forEach(docSnap => {
+      reports.push(docSnap.data() as PoliceReport);
+    });
+    localStorage.setItem('police_reports_list', JSON.stringify(reports));
+    return reports;
+  } catch (error) {
+    console.error("Ichki ishlar arizalarini Firestore-dan olishda xatolik:", error);
+    return JSON.parse(localStorage.getItem('police_reports_list') || '[]');
+  }
+}
+
+/**
+ * 17. Real-time ichki ishlar arizalarini tinglash
+ */
+export function onSnapshotPoliceReports(callback: (reports: PoliceReport[]) => void): () => void {
+  const path = 'police_reports';
+  return onSnapshot(collection(db, path), (snapshot) => {
+    const reports: PoliceReport[] = [];
+    snapshot.forEach(docSnap => {
+      reports.push(docSnap.data() as PoliceReport);
+    });
+    localStorage.setItem('police_reports_list', JSON.stringify(reports));
+    callback(reports);
+  }, (error) => {
+    console.error("Ichki ishlar arizalarini tinglashda xatolik:", error);
+  });
+}
+
+/**
+ * 18. Ichki ishlar arizasini Firestore-da yangilash
+ */
+export async function updatePoliceReportInFirebase(id: string, updates: Partial<PoliceReport>): Promise<boolean> {
+  const path = 'police_reports';
+  try {
+    await updateDoc(doc(db, path, id), updates);
+    return true;
+  } catch (error) {
+    console.error("Ichki ishlar arizasini Firestore-da yangilashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 19. Ichki ishlar arizasini Firestore-dan o'chirish
+ */
+export async function deletePoliceReportFromFirebase(id: string): Promise<boolean> {
+  const path = 'police_reports';
+  try {
+    await deleteDoc(doc(db, path, id));
+    return true;
+  } catch (error) {
+    console.error("Ichki ishlar arizasini Firestore-dan o'chirishda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 20. Chat xonasini Firestore-ga saqlash (mijoz va advokat o'rtasida)
+ */
+export async function saveChatRoomToFirebase(room: ChatRoom): Promise<boolean> {
+  const path = 'lawyer_chats';
+  const docId = `${room.clientId}_${room.lawyerId}`;
+  try {
+    console.log("Chat xonasi Firestore-ga saqlanmoqda...", docId);
+    await setDoc(doc(db, path, docId), room);
+    return true;
+  } catch (error) {
+    console.error("Chat xonasini Firestore-ga saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 21. Barcha chat xonalarini Firestore-dan yuklash
+ */
+export async function getChatRoomsFromFirebase(): Promise<ChatRoom[]> {
+  const path = 'lawyer_chats';
+  try {
+    console.log("Chat xonalari Firestore-dan yuklanmoqda...");
+    const snapshot = await getDocs(collection(db, path));
+    const rooms: ChatRoom[] = [];
+    snapshot.forEach(docSnap => {
+      rooms.push(docSnap.data() as ChatRoom);
+    });
+    localStorage.setItem('yurid_lawyer_chats', JSON.stringify(rooms));
+    return rooms;
+  } catch (error) {
+    console.error("Chat xonalarini Firestore-dan olishda xatolik:", error);
+    return JSON.parse(localStorage.getItem('yurid_lawyer_chats') || '[]');
+  }
+}
+
+/**
+ * 22. Real-time chat xonalarini tinglash
+ */
+export function onSnapshotChatRooms(callback: (rooms: ChatRoom[]) => void): () => void {
+  const path = 'lawyer_chats';
+  return onSnapshot(collection(db, path), (snapshot) => {
+    const rooms: ChatRoom[] = [];
+    snapshot.forEach(docSnap => {
+      rooms.push(docSnap.data() as ChatRoom);
+    });
+    localStorage.setItem('yurid_lawyer_chats', JSON.stringify(rooms));
+    callback(rooms);
+  }, (error) => {
+    console.error("Chat xonalarini tinglashda xatolik:", error);
+  });
+}
+
+/**
+ * 23. Google foydalanuvchisini Firestore-dagi "users" collection-iga saqlash
+ */
+export async function saveGoogleUserToFirestore(user: { id: string; ism: string; email: string; rasm: string | null; sana: string }): Promise<boolean> {
+  const path = 'users';
+  try {
+    console.log("Google foydalanuvchisi Firestore 'users' collection-ga saqlanmoqda...", user.id);
+    await setDoc(doc(db, path, user.id), user);
+    return true;
+  } catch (error) {
+    console.error("Google foydalanuvchisini 'users'ga saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 24. Firestore-dagi "users" collection-idan foydalanuvchini olish
+ */
+export async function getGoogleUserFromFirestore(id: string): Promise<any | null> {
+  const path = 'users';
+  try {
+    const docSnap = await getDoc(doc(db, path, id));
+    if (docSnap.exists()) {
+      return docSnap.data();
+    }
+    return null;
+  } catch (error) {
+    console.error("Google foydalanuvchisini 'users'dan olishda xatolik:", error);
+    return null;
+  }
+}
+

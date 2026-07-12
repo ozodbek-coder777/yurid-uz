@@ -80,6 +80,17 @@ export interface LawyerDetails {
   role?: string;
 }
 
+export interface RegisteredUser {
+  id: string;
+  ism: string;
+  telefon: string;
+  email: string;
+  manzil: string;
+  parol: string;
+  rasm: string | null;
+  sana?: string;
+}
+
 export type PoliceReportType = 'Jinoyat' | 'Ma\'muriy' | 'Boshqa';
 export type PoliceReportStatus = 'Yuborilgan' | 'Ko\'rib chiqilmoqda' | 'Tergovda' | 'Tugallangan' | 'Rad etilgan';
 
@@ -122,4 +133,21 @@ export interface NewsItem {
   muallif: string;
   sana: string; // YYYY-MM-DD
   muhim: boolean;
+}
+
+export interface LawyerChatMessage {
+  id: string;
+  sender: 'client' | 'lawyer';
+  text: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface ChatRoom {
+  clientId: string;
+  clientName: string;
+  lawyerId: string;
+  lawyerName: string;
+  messages: LawyerChatMessage[];
+  lastUpdated: string;
 }

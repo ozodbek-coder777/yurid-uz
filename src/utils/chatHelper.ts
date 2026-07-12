@@ -1,19 +1,6 @@
-export interface ChatMessage {
-  id: string;
-  sender: 'client' | 'lawyer';
-  text: string;
-  timestamp: string;
-  read: boolean;
-}
-
-export interface ChatRoom {
-  clientId: string;
-  clientName: string;
-  lawyerId: string;
-  lawyerName: string;
-  messages: ChatMessage[];
-  lastUpdated: string;
-}
+import { ChatRoom, LawyerChatMessage as ChatMessage } from '../types';
+export type { ChatRoom };
+import { saveChatRoomToFirebase } from './firebaseHelper';
 
 // Get all chat rooms from localStorage
 export function getChatRooms(): ChatRoom[] {
@@ -27,9 +14,13 @@ export function getChatRooms(): ChatRoom[] {
   }
 }
 
-// Save chat rooms to localStorage
+// Save chat rooms to localStorage and Firebase
 export function saveChatRooms(rooms: ChatRoom[]) {
   localStorage.setItem('yurid_lawyer_chats', JSON.stringify(rooms));
+  // Save each room to Firestore
+  rooms.forEach(room => {
+    saveChatRoomToFirebase(room);
+  });
   // Dispatch a custom event to notify components in the same tab
   window.dispatchEvent(new Event('yurid_chats_updated'));
 }

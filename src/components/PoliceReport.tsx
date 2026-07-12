@@ -21,6 +21,7 @@ import {
 import { PoliceReport, PoliceReportType, WitnessDetails, PoliceReportAIAnalysis } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { sendSmsCode } from '../lib/firebase';
+import { savePoliceReportToFirebase, onSnapshotPoliceReports, getPoliceReportsFromFirebase } from '../utils/firebaseHelper';
 
 interface PoliceReportProps {
   lang: 'uz' | 'ru';
@@ -129,6 +130,17 @@ export default function PoliceReportComponent({ lang }: PoliceReportProps) {
     }
     return [];
   });
+
+  // Synchronize reports in real-time across devices
+  useEffect(() => {
+    getPoliceReportsFromFirebase().catch(err => console.error("Initial load of police reports failed:", err));
+    const unsubscribe = onSnapshotPoliceReports((data) => {
+      if (data) {
+        setReports(data);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('police_reports_list', JSON.stringify(reports));
@@ -325,6 +337,9 @@ export default function PoliceReportComponent({ lang }: PoliceReportProps) {
         smsVerified: true,
         aiAnalysis: currentAIAnalysis || undefined
       };
+
+      // Save to Firestore so other devices get it immediately
+      savePoliceReportToFirebase(newReport);
 
       setReports([newReport, ...reports]);
 

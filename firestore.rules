@@ -4,13 +4,26 @@ service cloud.firestore {
     
     // Security rules for the main "applications" (submissions) collection
     match /applications/{applicationId} {
-      // Anyone can read submissions (to support public tracking and lookup)
-      // Anyone can create submissions (to allow clients to submit legal aid requests without mandatory sign-in)
-      allow read, create: if true;
-      
-      // Updates and deletions are restricted to authorized administrators/lawyers.
-      // (If you implement Firebase Auth for your lawyers, you can change this to `request.auth != null`)
-      allow update, delete: if true;
+      allow read, create, update, delete: if true;
+    }
+
+    // Security rules for the "users" collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Security rules for the "user_profiles" collection
+    match /user_profiles/{profileId} {
+      allow read, write: if true;
+    }
+
+    // Security rules for other persistent collections (e.g. police reports, lawyer chats)
+    match /police_reports/{reportId} {
+      allow read, write: if true;
+    }
+
+    match /lawyer_chats/{chatId} {
+      allow read, write: if true;
     }
 
     // Default catch-all rules for other persistent collections

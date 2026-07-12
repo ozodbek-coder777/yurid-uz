@@ -1,8 +1,11 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X } from 'lucide-react';
+import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, LogOut } from 'lucide-react';
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
 import { getUnreadCount } from './utils/chatHelper';
+import { getChatRoomsFromFirebase, onSnapshotChatRooms } from './utils/firebaseHelper';
+import { googleLogout } from './lib/firebase';
+
 
 // Lazy load large sub-tab and modal components to reduce initial page load size on mobile
 const ClientChat = lazy(() => import('./components/ClientChat'));
@@ -32,6 +35,71 @@ export default function App() {
   const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news'>('chatbot');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    const saved = localStorage.getItem('logged_in_user');
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  });
+
+  const handleLogout = async () => {
+    try {
+      await googleLogout();
+    } catch (err) {
+      console.error("Google logout error:", err);
+    }
+    localStorage.removeItem('logged_in_user');
+    setCurrentUser(null);
+    window.dispatchEvent(new Event('yurid_user_updated'));
+    setToastMessage(lang === 'uz' ? "Tizimdan muvaffaqiyatli chiqdingiz!" : "Вы успешно вышли из системы!");
+    setShowToast(false);
+    setTimeout(() => {
+      setShowToast(true);
+    }, 50);
+    setClientSubTab('chatbot');
+  };
+
+  const handleClientSubTabChange = (tab: 'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news') => {
+    const protectedTabs = ['hire', 'police', 'witnesses'];
+    const loggedUserRaw = localStorage.getItem('logged_in_user');
+    
+    if (protectedTabs.includes(tab) && !loggedUserRaw) {
+      setToastMessage(lang === 'uz' ? "Iltimos, ushbu bo'limdan foydalanish uchun tizimga kiring!" : "Пожалуйста, войдите в систему для доступа к этому разделу!");
+      setShowToast(false);
+      setTimeout(() => {
+        setShowToast(true);
+      }, 50);
+      setClientSubTab('profile');
+    } else {
+      setClientSubTab(tab);
+    }
+  };
+
+  useEffect(() => {
+    const handleUserUpdate = () => {
+      const saved = localStorage.getItem('logged_in_user');
+      if (saved) {
+        try {
+          setCurrentUser(JSON.parse(saved));
+        } catch (e) {
+          setCurrentUser(null);
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+    window.addEventListener('yurid_user_updated', handleUserUpdate);
+    window.addEventListener('storage', handleUserUpdate);
+    return () => {
+      window.removeEventListener('yurid_user_updated', handleUserUpdate);
+      window.removeEventListener('storage', handleUserUpdate);
+    };
+  }, []);
   
   // Language selection state
   const [lang, setLang] = useState<'uz' | 'ru'>(() => {
@@ -262,6 +330,15 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Start Firestore lawyer chats real-time synchronization
+  useEffect(() => {
+    getChatRoomsFromFirebase().catch(err => console.error("Initial load of chat rooms failed:", err));
+    const unsubscribe = onSnapshotChatRooms((rooms) => {
+      // Handled automatically via localStorage + custom event trigger
+    });
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const updateUnread = () => {
       const loggedUserRaw = localStorage.getItem('logged_in_user');
@@ -410,6 +487,43 @@ export default function App() {
                 )}
               </nav>
 
+              {/* Profile / Cabinet indicator in Header */}
+              {currentUser ? (
+                <div className="flex items-center gap-2.5 bg-[#161B22] border border-[#30363D] pl-2 pr-3 py-1.5 rounded-xl">
+                  {currentUser.rasm ? (
+                    <img 
+                      src={currentUser.rasm} 
+                      alt={currentUser.ism} 
+                      className="w-7 h-7 rounded-lg object-cover border border-blue-500/30"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-lg flex items-center justify-center font-bold text-xs shrink-0">
+                      {currentUser.ism.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="text-left select-none hidden lg:block">
+                    <p className="text-[11px] font-bold text-white leading-tight max-w-[120px] truncate">{currentUser.ism}</p>
+                    <p className="text-[9px] text-gray-400 leading-tight truncate max-w-[120px]">{currentUser.email}</p>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-400 hover:text-rose-400 transition-colors cursor-pointer ml-1 p-0.5"
+                    title={lang === 'uz' ? "Tizimdan chiqish" : "Выйти из системы"}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleClientSubTabChange('profile')}
+                  className="bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 h-10 shrink-0"
+                >
+                  <User className="w-4 h-4" />
+                  <span>{lang === 'uz' ? "Kirish" : "Войти"}</span>
+                </button>
+              )}
+
             </div>
 
             {/* Mobile Actions Container (Visible on Mobile) */}
@@ -444,6 +558,51 @@ export default function App() {
         {/* Mobile Dropdown Menu Container */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-[#0D1017] border-t border-[#1F2937] px-4 py-5 space-y-4 animate-fade-in shadow-2xl">
+            {/* Mobile Profile status */}
+            {currentUser ? (
+              <div className="bg-[#161B22] border border-[#1F2937] p-4 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {currentUser.rasm ? (
+                    <img 
+                      src={currentUser.rasm} 
+                      alt={currentUser.ism} 
+                      className="w-10 h-10 rounded-xl object-cover border border-blue-500/30"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-blue-600/20 border border-blue-500/30 text-blue-400 rounded-xl flex items-center justify-center font-bold text-sm shrink-0">
+                      {currentUser.ism.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="text-left select-none max-w-[150px]">
+                    <p className="text-sm font-bold text-white truncate">{currentUser.ism}</p>
+                    <p className="text-xs text-gray-400 truncate">{currentUser.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 p-2.5 rounded-xl transition-all"
+                  title={lang === 'uz' ? "Chiqish" : "Выйти"}
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  handleClientSubTabChange('profile');
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+              >
+                <User className="w-5 h-5" />
+                <span>{lang === 'uz' ? "Kirish / Ro'yxatdan o'tish" : "Войти / Регистрация"}</span>
+              </button>
+            )}
+
             {/* Nav Tabs */}
             <div className="space-y-2">
               <button
@@ -595,7 +754,7 @@ export default function App() {
             {/* Client sub-tab navigation */}
             <div className="flex border-b border-gray-800 space-x-6 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-gray-800/80 scrollbar-track-transparent">
               <button
-                onClick={() => setClientSubTab('chatbot')}
+                onClick={() => handleClientSubTabChange('chatbot')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'chatbot'
                     ? 'border-blue-500 text-blue-400 font-bold'
@@ -606,7 +765,7 @@ export default function App() {
                 {lang === 'uz' ? 'Yuridik Yordam Arizasi' : 'Юридическая Заявка'}
               </button>
               <button
-                onClick={() => setClientSubTab('hire')}
+                onClick={() => handleClientSubTabChange('hire')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'hire'
                     ? 'border-teal-500 text-teal-400 font-bold'
@@ -617,7 +776,7 @@ export default function App() {
                 {lang === 'uz' ? 'Advokat Yollash' : 'Нанять Адвоката'}
               </button>
               <button
-                onClick={() => setClientSubTab('police')}
+                onClick={() => handleClientSubTabChange('police')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'police'
                     ? 'border-red-500 text-red-400 font-bold'
@@ -628,7 +787,7 @@ export default function App() {
                 {lang === 'uz' ? 'Ichki Ishlarga Xabar' : 'Сообщить в Органы'}
               </button>
               <button
-                onClick={() => setClientSubTab('profile')}
+                onClick={() => handleClientSubTabChange('profile')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'profile'
                     ? 'border-purple-500 text-purple-400 font-bold'
@@ -639,7 +798,7 @@ export default function App() {
                 {lang === 'uz' ? 'Profil & Cabinet' : 'Профиль и Кабинет'}
               </button>
               <button
-                onClick={() => setClientSubTab('witnesses')}
+                onClick={() => handleClientSubTabChange('witnesses')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'witnesses'
                     ? 'border-emerald-500 text-emerald-400 font-bold'
@@ -650,7 +809,7 @@ export default function App() {
                 {lang === 'uz' ? 'Xolis Guvohlar' : 'Независимые Свидетели'}
               </button>
               <button
-                onClick={() => setClientSubTab('news')}
+                onClick={() => handleClientSubTabChange('news')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
                   clientSubTab === 'news'
                     ? 'border-amber-500 text-amber-400 font-bold'

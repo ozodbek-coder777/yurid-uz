@@ -51,12 +51,75 @@
         }
       },
       "required": ["id", "fullName", "phone", "incidentDescription", "status", "urgency", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile with Google auth details",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ism": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "rasm": {
+          "type": "string"
+        },
+        "sana": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "ism", "email"]
+    },
+    "RegisteredUser": {
+      "title": "RegisteredUser",
+      "description": "A registered user in the system",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ism": {
+          "type": "string"
+        },
+        "telefon": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "manzil": {
+          "type": "string"
+        },
+        "parol": {
+          "type": "string"
+        },
+        "rasm": {
+          "type": "string"
+        },
+        "sana": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "ism", "email"]
     }
   },
   "firestore": {
     "applications": {
       "schema": "Application",
       "description": "User applications/submissions"
+    },
+    "users": {
+      "schema": "User",
+      "description": "Google auth and basic user profiles"
+    },
+    "user_profiles": {
+      "schema": "RegisteredUser",
+      "description": "Registered user profiles"
     }
   }
 }
