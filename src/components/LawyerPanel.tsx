@@ -36,10 +36,19 @@ import {
   Users,
   Download,
   FileDown,
-  Newspaper
+  Newspaper,
+  Settings
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
-import { getApplicationsFromFirebase, updateApplicationInFirebase, deleteApplicationFromFirebase, saveApplicationToFirebase, onSnapshotApplications } from '../utils/firebaseHelper';
+import { 
+  getApplicationsFromFirebase, 
+  updateApplicationInFirebase, 
+  deleteApplicationFromFirebase, 
+  saveApplicationToFirebase, 
+  onSnapshotApplications,
+  saveFeatureSettingsToFirebase,
+  onSnapshotFeatureSettings
+} from '../utils/firebaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
 import AdminPoliceReports from './AdminPoliceReports';
@@ -379,7 +388,12 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           }
           // Merge with current adminProfile to guarantee it never gets lost or stale!
           const nonAdmins = parsed.filter(l => l.id !== 'admin');
-          return [adminProfile, ...nonAdmins];
+          const mapped = [adminProfile, ...nonAdmins].map(l => ({
+            ...l,
+            isAvailable: l.isAvailable === undefined ? true : l.isAvailable,
+            activeCases: l.activeCases === undefined ? 0 : l.activeCases
+          }));
+          return mapped;
         }
       } catch (e) {
         console.error("Failed to parse lawyers_list from localStorage", e);
@@ -426,6 +440,31 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
   // Panel active tabs: 'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats'
   const [activePanelTab, setActivePanelTab] = useState<'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats'>('submissions');
+
+  const [features, setFeatures] = useState<any>({
+    lawyerHiring: true,
+    policeComplaint: true,
+    witnesses: true,
+    news: true
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshotFeatureSettings((settings) => {
+      if (settings) {
+        setFeatures(settings);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleToggleFeature = async (key: string) => {
+    const updated = {
+      ...features,
+      [key]: !features[key]
+    };
+    setFeatures(updated);
+    await saveFeatureSettingsToFirebase(updated);
+  };
 
   // Lawyer chat unread count
   const [lawyerUnreadCount, setLawyerUnreadCount] = useState(0);
@@ -1252,34 +1291,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
             <Clock className="w-4 h-4" />
             <span>{t.btn_refresh}</span>
           </button>
-          {/* Gmail/Google login integration status indicator */}
-          {gmailUser ? (
-            <div className="flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl px-3 py-2 text-xs">
-              {gmailUser.photoURL ? (
-                <img src={gmailUser.photoURL} alt="Google Avatar" className="w-4.5 h-4.5 rounded-full border border-blue-500/30" referrerPolicy="no-referrer" loading="lazy" />
-              ) : (
-                <div className="w-4.5 h-4.5 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-[10px]">G</div>
-              )}
-              <span className="text-blue-400 font-medium hidden sm:inline" title={gmailUser.email || ""}>Gmail Integratsiyalangan</span>
-              <button 
-                onClick={handleGmailLogout}
-                className="text-[10px] text-gray-400 hover:text-rose-400 ml-1.5 underline cursor-pointer"
-                title="Gmail integratsiyasini o'chirish"
-              >
-                Chiqish
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleGmailLogin}
-              disabled={isLoggingInGmail}
-              className="px-3 py-2 text-xs font-semibold bg-[#161B22] border border-blue-500/30 text-blue-400 hover:bg-blue-600/10 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Google orqali kirib Gmail ni ulash"
-            >
-              <Mail className="w-4 h-4 text-blue-400" />
-              <span>{isLoggingInGmail ? 'Ulanmoqda...' : 'Gmail ulanish'}</span>
-            </button>
-          )}
+          {/* Google Sign In removed by user request */}
 
           <button
             onClick={handleLogout}
@@ -2096,6 +2108,161 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           </div>
 
           <div className="space-y-4 text-xs text-gray-300">
+            {/* Feature Toggle Section */}
+            <div className="p-5 bg-[#161B22] border border-[#1F2937] rounded-xl space-y-4">
+              <h4 className="font-bold text-white text-xs flex items-center gap-1.5 border-b border-[#1F2937]/50 pb-2">
+                <Settings className="w-4 h-4 text-amber-400" />
+                <span>Bo'limlarni boshqarish (Feature Toggle)</span>
+              </h4>
+              
+              <div className="space-y-3">
+                {/* Toggle 1: Advokat yollash */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-white">Advokat yollash</p>
+                    <p className="text-[10px] text-gray-500">Mijozlar advokatlarni qidirishi, tavsiyalar olishi va yollashi</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature('lawyerHiring')}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      features.lawyerHiring ? 'bg-emerald-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        features.lawyerHiring ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 2: Ichki ishlar */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-white">Ichki ishlar (politsiyaga ariza)</p>
+                    <p className="text-[10px] text-gray-500">Ichki ishlar va prokuratura organlariga ariza topshirish tizimi</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature('policeComplaint')}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      features.policeComplaint ? 'bg-emerald-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        features.policeComplaint ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 3: Xolis guvohlar */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-white">Xolis guvohlar</p>
+                    <p className="text-[10px] text-gray-500">Arizalar uchun xolis guvoh bo'lish va guvohlarni ro'yxatdan o'tkazish</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature('witnesses')}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      features.witnesses ? 'bg-emerald-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        features.witnesses ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Toggle 4: Yangiliklar */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-white">Yangiliklar va e'lonlar</p>
+                    <p className="text-[10px] text-gray-500">Eng so'nggi yangiliklar, huquqiy o'zgarishlar va e'lonlar bo'limi</p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleFeature('news')}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                      features.news ? 'bg-emerald-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                        features.news ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Lawyers Load & Availability Section */}
+            <div className="p-5 bg-[#161B22] border border-[#1F2937] rounded-xl space-y-4">
+              <h4 className="font-bold text-white text-xs flex items-center gap-1.5 border-b border-[#1F2937]/50 pb-2">
+                <Users className="w-4 h-4 text-blue-400" />
+                <span>Advokatlar bandligi va ish yuklamasi (RBAC & Auto-Assignment)</span>
+              </h4>
+              
+              <div className="space-y-4 divide-y divide-[#1F2937]/50">
+                {lawyers.filter(l => l.role === 'lawyer').map(l => (
+                  <div key={l.id} className="pt-3 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-white text-sm">{l.name}</p>
+                      <p className="text-[10px] text-gray-500">{l.specialization}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      {/* Availability toggle */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-400">Ishga tayyor:</span>
+                        <button
+                          onClick={() => {
+                            const updated = lawyers.map(item => 
+                              item.id === l.id ? { ...item, isAvailable: !item.isAvailable } : item
+                            );
+                            setLawyers(updated);
+                            localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                            window.dispatchEvent(new Event('yurid_lawyers_updated'));
+                          }}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
+                            l.isAvailable ? 'bg-emerald-600' : 'bg-gray-700'
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                              l.isAvailable ? 'translate-x-4' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Active cases count input */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-400">Yuklama (Ishlar):</span>
+                        <input
+                          type="number"
+                          value={l.activeCases || 0}
+                          onChange={(e) => {
+                            const val = Math.max(0, parseInt(e.target.value) || 0);
+                            const updated = lawyers.map(item => 
+                              item.id === l.id ? { ...item, activeCases: val } : item
+                            );
+                            setLawyers(updated);
+                            localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                            window.dispatchEvent(new Event('yurid_lawyers_updated'));
+                          }}
+                          className="w-12 bg-slate-950 border border-[#1F2937] text-white text-xs font-bold px-1.5 py-1 rounded text-center focus:outline-hidden font-mono"
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="p-4 bg-[#161B22] border border-[#1F2937] rounded-xl space-y-2">
               <h4 className="font-bold text-white text-xs">Yuridik firmaning nomi:</h4>
               <p className="text-gray-400">Tizim nomi: <strong>"LegalForce & Partners" Advokatlik Firmasi</strong></p>
@@ -2765,116 +2932,44 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                 </div>
               </div>
 
-              {/* Section: Gmail Client Communication */}
+              {/* Section: Email Client Communication */}
               <div className="space-y-4 border-t border-[#1F2937] pt-5">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-blue-400" />
                   <h4 className="font-sans font-bold text-white text-xs uppercase tracking-wider">
-                    {lang === 'ru' ? 'Связь с клиентом через Gmail' : "Gmail orqali mijoz bilan bog'lanish"}
+                    {lang === 'ru' ? 'Связь с клиентом по Email' : "Mijoz bilan Email orqali bog'lanish"}
                   </h4>
                 </div>
 
-                {!gmailToken ? (
-                  <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-4.5 space-y-3">
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      {lang === 'ru' 
-                        ? 'Чтобы отправить официальное письмо клиенту прямо на его почту, пожалуйста, подключите свой аккаунт Google.' 
-                        : "Mijozga to'g'ridan-to'g'ri uning e-mail pochtasiga xat yuborish uchun Google profilingizni ulashingiz kerak."}
-                    </p>
-                    <button
-                      onClick={handleGmailLogin}
-                      disabled={isLoggingInGmail}
-                      className="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                <div className="bg-[#161B22]/60 border border-[#1F2937] rounded-2xl p-5 space-y-3.5">
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    {lang === 'ru' 
+                      ? 'Вы можете отправить электронное письмо на адрес клиента напрямую с помощью вашего почтового приложения.' 
+                      : "Mijozning e-mail manziliga o'zingizning elektron pochta dasturingiz orqali to'g'ridan-to'g'ri xat yozib yuborishingiz mumkin."}
+                  </p>
+
+                  <div className="space-y-2">
+                    <label className="block text-[11px] font-semibold text-gray-400">
+                      {lang === 'ru' ? 'Кому (Email клиента):' : "Kimga (Mijoz e-mali):"}
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={selectedSub.phone}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#1F2937] text-gray-400 bg-[#0D1017]/50 font-mono"
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <a
+                      href={`mailto:${selectedSub.phone}?subject=${encodeURIComponent(lang === 'ru' ? 'Ваше обращение на Yurid.uz' : "Yurid.uz saytidagi arizangiz bo'yicha")}`}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
                     >
-                      <Mail className="w-4 h-4" />
-                      <span>{isLoggingInGmail ? (lang === 'ru' ? 'Подключение...' : 'Ulanmoqda...') : (lang === 'ru' ? 'Подключить Gmail' : 'Gmail pochtasini ulash')}</span>
-                    </button>
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>{lang === 'ru' ? 'Написать клиенту' : 'Mijozga xat yozish'}</span>
+                    </a>
                   </div>
-                ) : (
-                  <div className="bg-[#161B22]/60 border border-[#1F2937] rounded-2xl p-5 space-y-3.5">
-                    <div className="flex items-center justify-between border-b border-[#1F2937]/50 pb-2 text-xs">
-                      <div className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span className="font-semibold">{lang === 'ru' ? 'Gmail подключен' : 'Gmail ulangan'}</span>
-                      </div>
-                      <span className="text-gray-500 font-mono text-[11px]">{gmailUser?.email}</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-[11px] font-semibold text-gray-400">
-                        {lang === 'ru' ? 'Кому (Email клиента):' : "Kimga (Mijoz e-mali):"}
-                      </label>
-                      <input
-                        type="text"
-                        disabled
-                        value={selectedSub.phone}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-[#1F2937] text-gray-400 bg-[#0D1017]/50 font-mono"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-[11px] font-semibold text-gray-400">
-                        {lang === 'ru' ? 'Тема письма:' : "Xat mavzusi:"}
-                      </label>
-                      <input
-                        type="text"
-                        value={emailSubject}
-                        onChange={(e) => setEmailSubject(e.target.value)}
-                        placeholder={lang === 'ru' ? 'Например: Ваше обращение на Yurid.uz' : "Masalan: Yurid.uz saytidagi arizangiz bo'yicha"}
-                        className="w-full px-3 py-2.5 text-xs rounded-xl border border-[#1F2937] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-[#0D1017]"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-[11px] font-semibold text-gray-400">
-                        {lang === 'ru' ? 'Текст письма (HTML поддерживается):' : "Xat matni (HTML qo'llab-quvvatlanadi):"}
-                      </label>
-                      <textarea
-                        value={emailBody}
-                        onChange={(e) => setEmailBody(e.target.value)}
-                        rows={5}
-                        placeholder={lang === 'ru' 
-                          ? `Здравствуйте, ${selectedSub.fullName}!\n\nМы изучили ваше обращение относительно вашей ситуации. Пожалуйста, отправьте нам дополнительные документы.` 
-                          : `Assalomu alaykum, ${selectedSub.fullName}!\n\nYurid.uz portali orqali yuborgan arizangiz advokatlarimiz tomonidan ko'rib chiqildi. Qo'shimcha ma'lumot olish uchun biz bilan bog'lanishingizni so'raymiz.`
-                        }
-                        className="w-full px-3 py-2.5 text-xs rounded-xl border border-[#1F2937] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-[#0D1017] leading-relaxed"
-                      />
-                    </div>
-
-                    {emailStatus && (
-                      <div className={`p-3 rounded-xl border text-xs flex items-start gap-2 ${
-                        emailStatus.type === 'success' 
-                          ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                          : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-                      }`}>
-                        <div className="mt-0.5 shrink-0">
-                          {emailStatus.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                        </div>
-                        <p>{emailStatus.message}</p>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end pt-1">
-                      <button
-                        onClick={handleSendEmail}
-                        disabled={isSendingEmail || !emailSubject.trim() || !emailBody.trim()}
-                        className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 disabled:bg-[#161B22] disabled:text-gray-600 text-white font-bold px-6 py-2.5 text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                      >
-                        {isSendingEmail ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>{lang === 'ru' ? 'Отправка...' : 'Yuborilmoqda...'}</span>
-                          </>
-                        ) : (
-                          <>
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>{lang === 'ru' ? 'Отправить письмо' : 'Xatni yuborish'}</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Section: Assign to Lawyer (Super Admin only or shows who is assigned) */}

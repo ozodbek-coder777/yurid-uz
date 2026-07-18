@@ -31,6 +31,18 @@ export interface Submission {
   assignedLawyer?: string;
   deadline?: string;
   timeline?: TimelineItem[];
+  email?: string;
+  region?: string;
+  category?: string;
+  categoryOther?: string;
+  problemDescription?: string;
+  isRecurring?: boolean;
+  previousContact?: string;
+  attachments?: string[];
+  preferredContact?: string;
+  assignedLawyerId?: string | null;
+  userId?: string;
+  applicationNumber?: string;
 }
 
 export interface IntakeSession {
@@ -78,6 +90,8 @@ export interface LawyerDetails {
   password?: string;
   isBlocked?: boolean;
   role?: string;
+  isAvailable?: boolean;
+  activeCases?: number;
 }
 
 export interface RegisteredUser {

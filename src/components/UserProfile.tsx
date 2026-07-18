@@ -219,6 +219,7 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
   const [regManzil, setRegManzil] = useState('');
   const [regParol, setRegParol] = useState('');
   const [regParolConfirm, setRegParolConfirm] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Profile Active tab: 'dashboard' | 'details' | 'submissions' | 'lawyers' | 'messages' | 'settings'
   const [activeProfileTab, setActiveProfileTab] = useState<'dashboard' | 'details' | 'submissions' | 'lawyers' | 'messages' | 'settings'>('dashboard');
@@ -440,6 +441,11 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
       return;
     }
 
+    if (!termsAccepted) {
+      setAuthError(lang === 'uz' ? "Siz Foydalanish shartlari va Maxfiylik siyosatiga rozilik berishingiz kerak!" : "Вы должны согласиться с Условиями использования и Политикой конфиденциальности!");
+      return;
+    }
+
     // Check blacklist
     const blacklisted = getBlacklistedUser(regEmail);
     if (blacklisted) {
@@ -468,7 +474,8 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
         manzil: regManzil.trim(),
         parol: regParol,
         rasm: null,
-        sana: new Date().toISOString().split('T')[0]
+        sana: new Date().toISOString().split('T')[0],
+        role: 'user'
       };
 
       // Save to Firestore so other devices get it immediately
@@ -752,6 +759,34 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
                   className="w-full bg-[#161B22] border border-[#1F2937] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
+            </div>
+
+            <div className="flex items-start gap-2 pt-2 pb-1">
+              <input
+                type="checkbox"
+                id="terms-checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="w-4 h-4 rounded text-teal-600 bg-[#161B22] border-[#1F2937] focus:ring-teal-500/20 mt-0.5 cursor-pointer"
+              />
+              <label htmlFor="terms-checkbox" className="text-xs text-gray-400 select-none cursor-pointer leading-relaxed">
+                {lang === 'ru' ? (
+                  <span>
+                    Я принимаю{" "}
+                    <a href="#/terms" className="text-teal-400 hover:underline">Условия использования</a>
+                    {" "}и{" "}
+                    <a href="#/privacy-policy" className="text-teal-400 hover:underline">Политику конфиденциальности</a>.
+                  </span>
+                ) : (
+                  <span>
+                    Men{" "}
+                    <a href="#/terms" className="text-teal-400 hover:underline">Foydalanish shartlari</a>
+                    {" "}va{" "}
+                    <a href="#/privacy-policy" className="text-teal-400 hover:underline">Maxfiylik siyosati</a>
+                    ga to'liq roziman.
+                  </span>
+                )}
+              </label>
             </div>
 
             <button

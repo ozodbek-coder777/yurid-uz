@@ -3,6 +3,7 @@ import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCi
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { saveApplicationToFirebase, getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase, deleteDraftFromFirebase } from '../utils/firebaseHelper';
+import { autoAssignLawyer } from '../utils/assignmentHelper';
 
 interface ClientChatProps {
   onSubmissionCreated?: () => void;
@@ -135,7 +136,8 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
       btn_submit_form: "Murojaatni rasmiylashtirish",
       step_1: "Bog'lanish",
       step_2: "Tafsilotlar",
-      step_3: "Tasdiqlash"
+      step_3: "Tasdiqlash",
+      disclaimer_text: "DIQQAT: Tizim orqali taqdim etiladigan dastlabki hisobot va tahlillar sun'iy intellekt (AI) yordamida shakllantiriladi va rasmiy yuridik xulosa hisoblanmaydi. Batafsil maslahat uchun professional advokatlarimiz bilan bog'laning."
     },
     ru: {
       bot_assistant_title: "Юридическая Заявка",
@@ -174,7 +176,8 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
       btn_submit_form: "Оформить обращение",
       step_1: "Контакты",
       step_2: "Детали",
-      step_3: "Готово"
+      step_3: "Готово",
+      disclaimer_text: "ВНИМАНИЕ: Предварительный анализ, предоставляемый данной системой, формируется искусственным интеллектом (ИИ) и не является официальным юридическим заключением. Для получения подробной консультации свяжитесь с нашими профессиональными адвокатами."
     }
   }[lang];
 
@@ -255,6 +258,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
     setFinalSummary(summaryText);
 
     try {
+      const assignment = autoAssignLawyer(incidentDescription);
       const submissionsList = JSON.parse(localStorage.getItem('submissions_list') || '[]');
       const newSub = {
         id: "sub_" + Date.now(),
@@ -272,7 +276,8 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
         createdAt: new Date().toISOString(),
         injuries: injuriesLabel,
         fault: faultLabel,
-        notes: "",
+        notes: `Tizim tomonidan avtomatik ravishda tayinlandi: ${assignment.lawyerName}`,
+        assignedLawyer: assignment.lawyerId,
         timeline: [
           {
             status: "YANGI",
@@ -407,6 +412,12 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
               <span>{loading ? (lang === 'ru' ? 'Отправка...' : 'Yuborilmoqda...') : t.btn_start_chat}</span>
               {!loading && <Sparkles className="w-4.5 h-4.5" />}
             </button>
+
+            {/* Legal Disclaimer */}
+            <div className="bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-2xl text-[11px] text-amber-500/80 leading-relaxed flex gap-2">
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/80" />
+              <span>{t.disclaimer_text}</span>
+            </div>
           </div>
         </div>
       )}
@@ -536,6 +547,12 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Legal Disclaimer */}
+          <div className="bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-2xl text-[11px] text-amber-500/80 leading-relaxed flex gap-2">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/80" />
+            <span>{t.disclaimer_text}</span>
           </div>
 
           <div className="flex gap-3 pt-4 border-t border-[#1F2937]/40">

@@ -106,6 +106,26 @@
         }
       },
       "required": ["id", "ism", "email"]
+    },
+    "FeatureSettings": {
+      "title": "FeatureSettings",
+      "description": "Application feature toggles",
+      "type": "object",
+      "properties": {
+        "lawyerHiring": {
+          "type": "boolean"
+        },
+        "policeComplaint": {
+          "type": "boolean"
+        },
+        "witnesses": {
+          "type": "boolean"
+        },
+        "news": {
+          "type": "boolean"
+        }
+      },
+      "required": ["lawyerHiring", "policeComplaint", "witnesses", "news"]
     }
   },
   "firestore": {
@@ -120,6 +140,10 @@
     "user_profiles": {
       "schema": "RegisteredUser",
       "description": "Registered user profiles"
+    },
+    "settings": {
+      "schema": "FeatureSettings",
+      "description": "Feature toggles and app configurations"
     }
   }
 }

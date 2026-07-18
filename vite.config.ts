@@ -20,13 +20,14 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              // Use precise paths to identify actual react/react-dom packages
+              if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/scheduler/')) {
                 return 'vendor-react';
               }
-              if (id.includes('lucide-react')) {
+              if (id.includes('node_modules/lucide-react/')) {
                 return 'vendor-lucide';
               }
-              if (id.includes('framer-motion') || id.includes('motion')) {
+              if (id.includes('node_modules/motion/') || id.includes('node_modules/@motionone/')) {
                 return 'vendor-motion';
               }
               return 'vendor-libs';

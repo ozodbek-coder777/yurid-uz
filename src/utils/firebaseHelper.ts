@@ -472,3 +472,57 @@ export function onSnapshotChatRooms(callback: (rooms: ChatRoom[]) => void): () =
   });
 }
 
+export interface FeatureSettings {
+  lawyerHiring: boolean;
+  policeComplaint: boolean;
+  witnesses: boolean;
+  news: boolean;
+}
+
+/**
+ * 23. Bo'lim sozlamalarini Firestore-ga saqlash
+ */
+export async function saveFeatureSettingsToFirebase(settings: FeatureSettings): Promise<boolean> {
+  const path = 'settings';
+  try {
+    console.log("Bo'lim sozlamalari Firestore-ga saqlanmoqda...", settings);
+    await setDoc(doc(db, path, 'features'), settings);
+    return true;
+  } catch (error) {
+    console.error("Error saving feature settings:", error);
+    return false;
+  }
+}
+
+/**
+ * 24. Bo'lim sozlamalarini Firestore-dan olish
+ */
+export async function getFeatureSettingsFromFirebase(): Promise<FeatureSettings | null> {
+  const path = 'settings';
+  try {
+    console.log("Bo'lim sozlamalari Firestore-dan yuklanmoqda...");
+    const docSnap = await getDoc(doc(db, path, 'features'));
+    if (docSnap.exists()) {
+      return docSnap.data() as FeatureSettings;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting feature settings:", error);
+    return null;
+  }
+}
+
+/**
+ * 25. Bo'lim sozlamalarini real-time tinglash
+ */
+export function onSnapshotFeatureSettings(callback: (settings: FeatureSettings) => void): () => void {
+  const path = 'settings';
+  return onSnapshot(doc(db, path, 'features'), (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as FeatureSettings);
+    }
+  }, (error) => {
+    console.error("Error listening to feature settings:", error);
+  });
+}
+

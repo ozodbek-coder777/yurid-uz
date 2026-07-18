@@ -3,7 +3,7 @@ import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, Clipbo
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
 import { getUnreadCount } from './utils/chatHelper';
-import { getChatRoomsFromFirebase, onSnapshotChatRooms } from './utils/firebaseHelper';
+import { getChatRoomsFromFirebase, onSnapshotChatRooms, onSnapshotFeatureSettings } from './utils/firebaseHelper';
 
 
 // Lazy load large sub-tab and modal components to reduce initial page load size on mobile
@@ -15,6 +15,9 @@ const UserProfile = lazy(() => import('./components/UserProfile'));
 const WitnessesList = lazy(() => import('./components/WitnessesList'));
 const NewsSection = lazy(() => import('./components/NewsSection'));
 const ClientChatModal = lazy(() => import('./components/ClientChatModal'));
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
+import NotFoundPage from './components/NotFoundPage';
 
 // Reusable elegant loader fallback for lazy components
 function ComponentLoader() {
@@ -34,6 +37,56 @@ export default function App() {
   const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news'>('chatbot');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'app' | 'privacy' | 'terms' | '404'>('app');
+
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash;
+      if (!hash || hash === '' || hash === '#/' || hash.startsWith('#client') || hash.startsWith('#lawyer')) {
+        setCurrentPage('app');
+      } else if (hash === '#/privacy-policy') {
+        setCurrentPage('privacy');
+      } else if (hash === '#/terms') {
+        setCurrentPage('terms');
+      } else {
+        setCurrentPage('404');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    handleHash(); // Run once initially
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, []);
+
+  const [features, setFeatures] = useState<any>({
+    lawyerHiring: true,
+    policeComplaint: true,
+    witnesses: true,
+    news: true
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshotFeatureSettings((settings) => {
+      if (settings) {
+        setFeatures(settings);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!features.lawyerHiring && clientSubTab === 'hire') {
+      setClientSubTab('chatbot');
+    }
+    if (!features.policeComplaint && clientSubTab === 'police') {
+      setClientSubTab('chatbot');
+    }
+    if (!features.witnesses && clientSubTab === 'witnesses') {
+      setClientSubTab('chatbot');
+    }
+    if (!features.news && clientSubTab === 'news') {
+      setClientSubTab('chatbot');
+    }
+  }, [features, clientSubTab]);
   
   // Language selection state
   const [lang, setLang] = useState<'uz' | 'ru'>(() => {
@@ -41,9 +94,7 @@ export default function App() {
   });
 
   // Hidden panel protection state
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    return localStorage.getItem('lawyer_panel_unlocked') === 'true';
-  });
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
   const [secretClicks, setSecretClicks] = useState(0);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -310,6 +361,18 @@ export default function App() {
     // Increment trigger to force LawyerPanel data reload
     setRefreshTrigger(prev => prev + 1);
   };
+
+  if (currentPage === 'privacy') {
+    return <PrivacyPolicy lang={lang} onBack={() => { window.location.hash = ''; setCurrentPage('app'); }} />;
+  }
+
+  if (currentPage === 'terms') {
+    return <TermsOfService lang={lang} onBack={() => { window.location.hash = ''; setCurrentPage('app'); }} />;
+  }
+
+  if (currentPage === '404') {
+    return <NotFoundPage lang={lang} onBack={() => { window.location.hash = ''; setCurrentPage('app'); }} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0C10] text-[#E5E7EB] flex flex-col font-sans" id="app-root-container">
@@ -616,28 +679,32 @@ export default function App() {
                 <ClipboardList className="w-4 h-4" />
                 {lang === 'uz' ? 'Yuridik Yordam Arizasi' : 'Юридическая Заявка'}
               </button>
-              <button
-                onClick={() => setClientSubTab('hire')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                  clientSubTab === 'hire'
-                    ? 'border-teal-500 text-teal-400 font-bold'
-                    : 'border-transparent text-gray-400 hover:text-white'
-                }`}
-              >
-                <Scale className="w-4 h-4" />
-                {lang === 'uz' ? 'Advokat Yollash' : 'Нанять Адвоката'}
-              </button>
-              <button
-                onClick={() => setClientSubTab('police')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                  clientSubTab === 'police'
-                    ? 'border-red-500 text-red-400 font-bold'
-                    : 'border-transparent text-gray-400 hover:text-white'
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                {lang === 'uz' ? 'Ichki Ishlarga Xabar' : 'Сообщить в Органы'}
-              </button>
+              {features.lawyerHiring && (
+                <button
+                  onClick={() => setClientSubTab('hire')}
+                  className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                    clientSubTab === 'hire'
+                      ? 'border-teal-500 text-teal-400 font-bold'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Scale className="w-4 h-4" />
+                  {lang === 'uz' ? 'Advokat Yollash' : 'Нанять Адвоката'}
+                </button>
+              )}
+              {features.policeComplaint && (
+                <button
+                  onClick={() => setClientSubTab('police')}
+                  className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                    clientSubTab === 'police'
+                      ? 'border-red-500 text-red-400 font-bold'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Shield className="w-4 h-4" />
+                  {lang === 'uz' ? 'Ichki Ishlarga Xabar' : 'Сообщить в Органы'}
+                </button>
+              )}
               <button
                 onClick={() => setClientSubTab('profile')}
                 className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
@@ -649,28 +716,32 @@ export default function App() {
                 <User className="w-4 h-4" />
                 {lang === 'uz' ? 'Profil & Cabinet' : 'Профиль и Кабинет'}
               </button>
-              <button
-                onClick={() => setClientSubTab('witnesses')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                  clientSubTab === 'witnesses'
-                    ? 'border-emerald-500 text-emerald-400 font-bold'
-                    : 'border-transparent text-gray-400 hover:text-white'
-                }`}
-              >
-                <Award className="w-4 h-4 text-emerald-400" />
-                {lang === 'uz' ? 'Xolis Guvohlar' : 'Независимые Свидетели'}
-              </button>
-              <button
-                onClick={() => setClientSubTab('news')}
-                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                  clientSubTab === 'news'
-                    ? 'border-amber-500 text-amber-400 font-bold'
-                    : 'border-transparent text-gray-400 hover:text-white'
-                }`}
-              >
-                <Globe className="w-4 h-4 text-amber-400" />
-                {lang === 'uz' ? 'Yangiliklar va E\'lonlar' : 'Новости и Объявления'}
-              </button>
+              {features.witnesses && (
+                <button
+                  onClick={() => setClientSubTab('witnesses')}
+                  className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                    clientSubTab === 'witnesses'
+                      ? 'border-emerald-500 text-emerald-400 font-bold'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Award className="w-4 h-4 text-emerald-400" />
+                  {lang === 'uz' ? 'Xolis Guvohlar' : 'Независимые Свидетели'}
+                </button>
+              )}
+              {features.news && (
+                <button
+                  onClick={() => setClientSubTab('news')}
+                  className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                    clientSubTab === 'news'
+                      ? 'border-amber-500 text-amber-400 font-bold'
+                      : 'border-transparent text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Globe className="w-4 h-4 text-amber-400" />
+                  {lang === 'uz' ? 'Yangiliklar va E\'lonlar' : 'Новости и Объявления'}
+                </button>
+              )}
             </div>
 
             {/* Sub-tab Content Components */}
@@ -822,10 +893,12 @@ export default function App() {
       <footer className="bg-[#0D1017] text-gray-400 text-xs py-6 border-t border-[#1F2937] mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>{t.footer_text}</p>
-          <div className="flex gap-4">
-            <a href="#client-chat-card" onClick={() => setActiveTab('client')} className="hover:text-white transition-colors">{t.footer_chat_sim}</a>
+          <div className="flex flex-wrap gap-4 justify-center sm:justify-end">
+            <a href="#client-chat-card" onClick={() => { setActiveTab('client'); window.location.hash = ''; }} className="hover:text-white transition-colors">{t.footer_chat_sim}</a>
+            <a href="#/privacy-policy" className="hover:text-white transition-colors">{lang === 'ru' ? 'Политика конфиденциальности' : 'Maxfiylik siyosati'}</a>
+            <a href="#/terms" className="hover:text-white transition-colors">{lang === 'ru' ? 'Условия использования' : 'Foydalanish shartlari'}</a>
             {isUnlocked && (
-              <a href="#lawyer-panel-container" onClick={() => setActiveTab('lawyer')} className="hover:text-white transition-colors">{t.footer_lawyer_panel}</a>
+              <a href="#lawyer-panel-container" onClick={() => { setActiveTab('lawyer'); window.location.hash = ''; }} className="hover:text-white transition-colors">{t.footer_lawyer_panel}</a>
             )}
           </div>
         </div>

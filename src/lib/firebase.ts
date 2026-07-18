@@ -50,8 +50,12 @@ const firebaseConfig = {
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 export const auth = getAuth(app);
 export const db = firebaseConfig.firestoreDatabaseId 
-  ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId)
-  : initializeFirestore(app, { experimentalForceLongPolling: true });
+  ? initializeFirestore(app, { 
+      experimentalForceLongPolling: true
+    }, firebaseConfig.firestoreDatabaseId)
+  : initializeFirestore(app, { 
+      experimentalForceLongPolling: true
+    });
 
 // Keep track of recaptcha verifier
 let recaptchaVerifier: RecaptchaVerifier | null = null;

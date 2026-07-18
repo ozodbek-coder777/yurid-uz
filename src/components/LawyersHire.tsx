@@ -14,13 +14,15 @@ import {
   Check, 
   AlertCircle,
   ThumbsUp,
-  Award
+  Award,
+  CheckCircle2
 } from 'lucide-react';
 import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
 import { saveApplicationToFirebase } from '../utils/firebaseHelper';
+import MultiStepHireForm from './MultiStepHireForm';
 
 interface LawyersHireProps {
   lang: 'uz' | 'ru';
@@ -223,7 +225,13 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
             localStorage.setItem('lawyers_list', JSON.stringify(defaultLawyers));
             return defaultLawyers;
           }
-          return parsed;
+          // Ensure every lawyer has isAvailable and activeCases
+          const mapped = parsed.map(l => ({
+            ...l,
+            isAvailable: l.isAvailable === undefined ? true : l.isAvailable,
+            activeCases: l.activeCases === undefined ? 0 : l.activeCases
+          }));
+          return mapped;
         }
       } catch (e) {
         console.error("Failed to parse lawyers_list", e);
@@ -303,6 +311,10 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
   const [confirmationResult, setConfirmationResult] = useState<any>(null);
   const [smsLoading, setSmsLoading] = useState(false);
   const [contactSuccess, setContactSuccess] = useState(false);
+
+  // Multi-step form state
+  const [showMultiStepForm, setShowMultiStepForm] = useState(false);
+  const [submittedAppInfo, setSubmittedAppInfo] = useState<{ appNumber: string; category: string } | null>(null);
 
   // Helper formula implementation:
   // Tizim bahosi calculations:
@@ -439,6 +451,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
     setShowSmsModal(false);
     setSmsCodeInput('');
     setSmsErrorMsg(null);
+    setShowMultiStepForm(true);
   };
 
   // Send Message & Trigger Firebase SMS Verification
@@ -507,7 +520,8 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
             return {
               ...l,
               casesAccepted: (l.casesAccepted || 0) + 1,
-              clientCount: (l.clientCount || 0) + 1
+              clientCount: (l.clientCount || 0) + 1,
+              activeCases: (l.activeCases || 0) + 1
             };
           }
           return l;
@@ -597,6 +611,56 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
     return matchesSearch && matchesSpec && matchesRating;
   });
 
+  if (submittedAppInfo) {
+    return (
+      <div className="min-h-[500px] flex items-center justify-center p-4">
+        <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 max-w-lg w-full text-center space-y-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          
+          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20">
+            <CheckCircle2 className="w-10 h-10" />
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-sans font-bold text-white">
+              {lang === 'ru' ? "Заявка успешно принята!" : "Arizangiz muvaffaqiyatli qabul qilindi!"}
+            </h2>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-xs font-bold rounded-full">
+              <span>ID: #{submittedAppInfo.appNumber}</span>
+            </div>
+          </div>
+
+          <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
+            {lang === 'ru' 
+              ? `Ваше заявление по теме "${submittedAppInfo.category}" зарегистрировано. Высококвалифицированный адвокат свяжется с вами в ближайшее время.`
+              : `Sizning "${submittedAppInfo.category}" bo'yicha arizangiz muvaffaqiyatli ro'yxatga olindi. Tez orada professional advokatimiz siz bilan bog'lanadi.`}
+          </p>
+
+          <div className="pt-4 border-t border-[#1F2937]/50 flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                setSubmittedAppInfo(null);
+                setShowMultiStepForm(false);
+              }}
+              className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              {lang === 'ru' ? "Вернуться к списку" : "Ro'yxatga qaytish"}
+            </button>
+            <button
+              onClick={() => {
+                setSubmittedAppInfo(null);
+                setShowMultiStepForm(true);
+              }}
+              className="flex-1 py-3 bg-[#161B22] hover:bg-slate-800 border border-[#1F2937] text-gray-300 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+            >
+              {lang === 'ru' ? "Новая заявка" : "Yangi ariza yuborish"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in text-gray-200">
       
@@ -609,6 +673,31 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
         <p className="text-sm text-gray-400">
           {t.subtitle}
         </p>
+      </div>
+
+      {/* General Application Hero Banner */}
+      <div className="bg-gradient-to-r from-blue-950/20 via-[#0D1017] to-teal-950/20 border border-[#1F2937] rounded-2xl p-5 sm:p-6 shadow-xl relative overflow-hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1">
+          <h3 className="font-sans font-bold text-white text-base sm:text-lg flex items-center gap-2">
+            <span className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse"></span>
+            {lang === 'ru' ? "Общая заявка на подбор адвоката" : "Advokat tanlash uchun umumiy ariza"}
+          </h3>
+          <p className="text-xs text-gray-400 max-w-xl">
+            {lang === 'ru' 
+              ? "Опишите вашу проблему шаг за шагом. Наша система направит её подходящему специалисту, который свяжется с вами в кратчайшие сроки."
+              : "Muammoingizni bosqichma-bosqich tasvirlab ariza topshiring. Tizimimiz uni mos mutaxassisga yo'naltiradi va siz bilan bog'lanishadi."}
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setActiveContactLawyer(null);
+            setSubmittedAppInfo(null);
+            setShowMultiStepForm(true);
+          }}
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md shadow-blue-500/10 cursor-pointer self-start sm:self-center shrink-0 active:scale-95 animate-pulse"
+        >
+          {lang === 'ru' ? "Подать заявку (5 шагов)" : "Ariza topshirish (5 bosqich)"}
+        </button>
       </div>
 
       {/* AI Recommendation Widget */}
@@ -929,109 +1018,23 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
         ))}
       </div>
 
-      {/* Dynamic contact and booking popup modal */}
-      {activeContactLawyer && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full relative shadow-2xl space-y-4">
-            <h3 className="text-lg font-sans font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
-              <MessageSquare className="text-teal-400 w-5 h-5" />
-              {t.contact_title}: <span className="text-teal-400">{activeContactLawyer.name}</span>
-            </h3>
-
-            {smsNotification && (
-              <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-2.5 rounded-lg text-xs flex items-start gap-2 font-mono">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400 mt-0.5" />
-                <span>{smsNotification}</span>
-              </div>
-            )}
-
-            {contactSuccess ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-xl text-center space-y-2 animate-scale-up">
-                <Check className="w-8 h-8 mx-auto text-emerald-400 border border-emerald-400/30 rounded-full p-1" />
-                <p className="text-xs font-semibold">{t.contact_success}</p>
-              </div>
-            ) : showSmsModal ? (
-              <div className="space-y-4 animate-fade-in">
-                <p className="text-xs text-gray-300 leading-relaxed">{t.sms_desc}</p>
-                <div className="space-y-1.5">
-                  <input
-                    type="text"
-                    value={smsCodeInput}
-                    disabled={smsLoading}
-                    onChange={(e) => setSmsCodeInput(e.target.value.replace(/\D/g, ''))}
-                    placeholder={t.sms_code_placeholder}
-                    className="w-full bg-slate-950 border border-slate-800 disabled:opacity-50 rounded-xl px-4 py-2.5 text-sm text-center tracking-widest text-white font-mono focus:outline-hidden"
-                  />
-                  {smsErrorMsg && (
-                    <span className="text-[11px] text-rose-400 block text-center font-medium">{smsErrorMsg}</span>
-                  )}
-                </div>
-                <button
-                  onClick={handleVerifySmsCode}
-                  disabled={smsCodeInput.length < 6 || smsLoading}
-                  className="w-full py-2.5 bg-teal-500 hover:bg-teal-400 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold rounded-xl text-xs transition-colors uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  {smsLoading ? (lang === 'ru' ? "ПРОВЕРКА..." : "TEKSHIRILMOQDA...") : t.sms_verify_btn}
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSendMessage} className="space-y-3.5">
-                <div className="space-y-1">
-                  <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{lang === 'ru' ? "Ваше Имя" : "Ismingiz"}</label>
-                  <input
-                    type="text"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    required
-                    placeholder={lang === 'ru' ? "Имя и фамилия" : "Ism va familiyangiz"}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{lang === 'ru' ? "Номер Телефона" : "Telefon Raqamingiz"}</label>
-                  <input
-                    type="tel"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    required
-                    placeholder="+998 90 123 45 67"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{t.contact_message}</label>
-                  <textarea
-                    value={contactMsg}
-                    onChange={(e) => setContactMsg(e.target.value)}
-                    required
-                    placeholder={lang === 'ru' ? "Подробное сообщение адвокату..." : "Advokatga batafsil xabar..."}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white h-20 focus:outline-hidden resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={smsLoading}
-                  className="w-full py-2.5 bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 disabled:from-slate-800 disabled:to-slate-900 disabled:text-slate-600 text-white font-bold rounded-xl text-xs uppercase transition-all tracking-wider flex items-center justify-center gap-1.5"
-                >
-                  {smsLoading ? (
-                    <span>{lang === 'ru' ? 'ОТПРАВКА...' : 'YUBORILMOQDA...'}</span>
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>{t.contact_send}</span>
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            <button
-              onClick={() => setActiveContactLawyer(null)}
-              className="absolute top-3 right-3 text-gray-400 hover:text-white transition-colors"
-            >
-              ✕
-            </button>
+      {/* Multi-step application modal */}
+      {showMultiStepForm && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in backdrop-blur-sm overflow-y-auto">
+          <div className="my-8 max-w-4xl w-full">
+            <MultiStepHireForm
+              lang={lang}
+              selectedLawyer={activeContactLawyer}
+              onClose={() => {
+                setShowMultiStepForm(false);
+                setActiveContactLawyer(null);
+              }}
+              onSuccess={(appNumber, category) => {
+                setSubmittedAppInfo({ appNumber, category });
+                setShowMultiStepForm(false);
+                setActiveContactLawyer(null);
+              }}
+            />
           </div>
         </div>
       )}
