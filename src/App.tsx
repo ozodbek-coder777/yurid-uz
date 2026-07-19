@@ -1,5 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X } from 'lucide-react';
+import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, Search, ShieldAlert } from 'lucide-react';
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
 import { getUnreadCount } from './utils/chatHelper';
@@ -15,6 +15,7 @@ const UserProfile = lazy(() => import('./components/UserProfile'));
 const WitnessesList = lazy(() => import('./components/WitnessesList'));
 const NewsSection = lazy(() => import('./components/NewsSection'));
 const ClientChatModal = lazy(() => import('./components/ClientChatModal'));
+const ApplicationTracking = lazy(() => import('./components/ApplicationTracking'));
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import NotFoundPage from './components/NotFoundPage';
@@ -34,7 +35,7 @@ function ComponentLoader() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'client' | 'lawyer'>('client');
-  const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news'>('chatbot');
+  const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news' | 'kuzatish'>('chatbot');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'app' | 'privacy' | 'terms' | '404'>('app');
@@ -73,19 +74,9 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  // Redirection was disabled to show elegant "Section not available" views instead of silent redirects.
   useEffect(() => {
-    if (!features.lawyerHiring && clientSubTab === 'hire') {
-      setClientSubTab('chatbot');
-    }
-    if (!features.policeComplaint && clientSubTab === 'police') {
-      setClientSubTab('chatbot');
-    }
-    if (!features.witnesses && clientSubTab === 'witnesses') {
-      setClientSubTab('chatbot');
-    }
-    if (!features.news && clientSubTab === 'news') {
-      setClientSubTab('chatbot');
-    }
+    // Redirection disabled
   }, [features, clientSubTab]);
   
   // Language selection state
@@ -742,6 +733,17 @@ export default function App() {
                   {lang === 'uz' ? 'Yangiliklar va E\'lonlar' : 'Новости и Объявления'}
                 </button>
               )}
+              <button
+                onClick={() => setClientSubTab('kuzatish')}
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                  clientSubTab === 'kuzatish'
+                    ? 'border-blue-500 text-blue-400 font-bold'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                <Search className="w-4 h-4 text-blue-400" />
+                {lang === 'uz' ? 'Arizani Kuzatish' : 'Отслеживание Заявки'}
+              </button>
             </div>
 
             {/* Sub-tab Content Components */}
@@ -826,19 +828,86 @@ export default function App() {
                   </>
                 )}
                 {clientSubTab === 'hire' && (
-                  <LawyersHire lang={lang} />
+                  features.lawyerHiring ? (
+                    <LawyersHire lang={lang} />
+                  ) : (
+                    <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
+                      <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mx-auto">
+                        <ShieldAlert className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white">
+                        {lang === 'ru' ? "Этот раздел временно недоступен" : "Bu bo'lim hozircha mavjud emas"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {lang === 'ru'
+                          ? `Раздел "Нанять Адвоката" был отключен администратором.`
+                          : `"Advokat yollash" bo'limi administrator tomonidan vaqtincha o'chirilgan.`}
+                      </p>
+                    </div>
+                  )
                 )}
                 {clientSubTab === 'police' && (
-                  <PoliceReportComponent lang={lang} />
+                  features.policeComplaint ? (
+                    <PoliceReportComponent lang={lang} />
+                  ) : (
+                    <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
+                      <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mx-auto">
+                        <ShieldAlert className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white">
+                        {lang === 'ru' ? "Этот раздел временно недоступен" : "Bu bo'lim hozircha mavjud emas"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {lang === 'ru'
+                          ? `Раздел "Сообщить в Органы" был отключен администратором.`
+                          : `"Ichki ishlarga xabar" bo'limi administrator tomonidan vaqtincha o'chirilgan.`}
+                      </p>
+                    </div>
+                  )
                 )}
                 {clientSubTab === 'profile' && (
                   <UserProfile lang={lang} onLanguageChange={handleLangChange} />
                 )}
                 {clientSubTab === 'witnesses' && (
-                  <WitnessesList lang={lang} />
+                  features.witnesses ? (
+                    <WitnessesList lang={lang} />
+                  ) : (
+                    <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
+                      <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mx-auto">
+                        <ShieldAlert className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white">
+                        {lang === 'ru' ? "Этот раздел временно недоступен" : "Bu bo'lim hozircha mavjud emas"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {lang === 'ru'
+                          ? `Раздел "Независимые Свидетели" был отключен администратором.`
+                          : `"Xolis guvohlar" bo'limi administrator tomonidan vaqtincha o'chirilgan.`}
+                      </p>
+                    </div>
+                  )
                 )}
                 {clientSubTab === 'news' && (
-                  <NewsSection lang={lang} />
+                  features.news ? (
+                    <NewsSection lang={lang} />
+                  ) : (
+                    <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
+                      <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mx-auto">
+                        <ShieldAlert className="w-8 h-8" />
+                      </div>
+                      <h3 className="text-xl font-bold text-white">
+                        {lang === 'ru' ? "Этот раздел временно недоступен" : "Bu bo'lim hozircha мавжуд emas"}
+                      </h3>
+                      <p className="text-sm text-gray-400">
+                        {lang === 'ru'
+                          ? `Раздел "Новости" был отключен администратором.`
+                          : `"Yangiliklar" bo'limi administrator tomonidan vaqtincha o'chirilgan.`}
+                      </p>
+                    </div>
+                  )
+                )}
+                {clientSubTab === 'kuzatish' && (
+                  <ApplicationTracking lang={lang} onBack={() => setClientSubTab('chatbot')} />
                 )}
               </Suspense>
             )}

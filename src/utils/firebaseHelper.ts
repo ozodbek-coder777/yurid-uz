@@ -10,7 +10,8 @@ import {
   deleteDoc, 
   query, 
   orderBy,
-  onSnapshot
+  onSnapshot,
+  runTransaction
 } from 'firebase/firestore';
 
 export enum OperationType {
@@ -524,5 +525,31 @@ export function onSnapshotFeatureSettings(callback: (settings: FeatureSettings) 
   }, (error) => {
     console.error("Error listening to feature settings:", error);
   });
+}
+
+/**
+ * 26. Cheksiz ariza raqami olish uchun tranzaksiya (YU-1, YU-2, ...)
+ */
+export async function getNextApplicationNumber(): Promise<string> {
+  const counterRef = doc(db, 'counters', 'applications');
+  try {
+    const nextNum = await runTransaction(db, async (transaction) => {
+      const counterDoc = await transaction.get(counterRef);
+      if (!counterDoc.exists()) {
+        transaction.set(counterRef, { current: 1 });
+        return 1;
+      }
+      const newCount = (counterDoc.data().current || 0) + 1;
+      transaction.update(counterRef, { current: newCount });
+      return newCount;
+    });
+    return `YU-${nextNum}`;
+  } catch (error) {
+    console.error("getNextApplicationNumber tranzaksiyasida xatolik:", error);
+    // Fallback locally using timestamp or Math.random if Firebase fails
+    const localCounter = Number(localStorage.getItem('local_app_counter') || '10') + 1;
+    localStorage.setItem('local_app_counter', String(localCounter));
+    return `YU-${localCounter}`;
+  }
 }
 

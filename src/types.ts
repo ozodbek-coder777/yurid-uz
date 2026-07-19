@@ -103,6 +103,7 @@ export interface RegisteredUser {
   parol: string;
   rasm: string | null;
   sana?: string;
+  role?: string;
 }
 
 export type PoliceReportType = 'Jinoyat' | 'Ma\'muriy' | 'Boshqa';

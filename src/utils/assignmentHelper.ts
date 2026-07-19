@@ -43,7 +43,7 @@ export interface Lawyer {
   role: string;
 }
 
-export function autoAssignLawyer(description: string): { lawyerId: string; lawyerName: string } {
+export function autoAssignLawyer(description: string, category?: string): { lawyerId: string; lawyerName: string } | null {
   // 1. Get current lawyers list
   const saved = localStorage.getItem('lawyers_list');
   let lawyers: Lawyer[] = [];
@@ -75,33 +75,32 @@ export function autoAssignLawyer(description: string): { lawyerId: string; lawye
   }
 
   // 2. Filter active, unblocked, available, non-admin lawyers
-  let candidates = lawyers.filter(l => l.role === 'lawyer' && !l.isBlocked && l.isAvailable);
+  const candidates = lawyers.filter(l => 
+    (l.role === 'lawyer' || l.role === 'advokat') && 
+    !l.isBlocked && 
+    l.isAvailable
+  );
 
   if (candidates.length === 0) {
-    // If no available candidates, fallback to any active lawyer
-    candidates = lawyers.filter(l => l.role === 'lawyer' && !l.isBlocked);
-  }
-
-  if (candidates.length === 0) {
-    return { lawyerId: 'admin', lawyerName: 'Super Admin' };
+    return null;
   }
 
   // 3. Determine the category
-  const category = determineCategory(description);
-
-  // 4. Try to match candidate specialties
-  let matchedCandidates = candidates;
-  if (category) {
-    matchedCandidates = candidates.filter(l => {
-      const spec = l.specialization.toLowerCase();
-      const catParts = category.toLowerCase().split(', ');
-      return catParts.some(part => spec.includes(part));
-    });
+  const catToMatch = category || determineCategory(description);
+  if (!catToMatch) {
+    return null;
   }
 
-  // If no candidates matched the specialization, fallback to all available candidates
+  // 4. Try to match candidate specialties (case-insensitive substring match)
+  const catParts = catToMatch.toLowerCase().split(/[,\s]+/).filter(Boolean);
+  const matchedCandidates = candidates.filter(l => {
+    const spec = (l.specialization || '').toLowerCase();
+    return catParts.some(part => spec.includes(part) || part.includes(spec));
+  });
+
+  // If no candidates matched the specialization, do NOT fallback to other specialties, return null
   if (matchedCandidates.length === 0) {
-    matchedCandidates = candidates;
+    return null;
   }
 
   // 5. Select the one with lowest activeCases
