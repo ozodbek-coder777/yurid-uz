@@ -4,7 +4,7 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-export type SubmissionStatus = 'YANGI' | 'KO\'RIB_CHIQILMOQDA' | 'QABUL_QILINGAN' | 'RAD_ETILGAN';
+export type SubmissionStatus = 'YANGI' | 'KO\'RIB_CHIQILMOQDA' | 'QABUL_QILINGAN' | 'RAD_ETILGAN' | 'YAKUNLANDI' | 'TUGALLANGAN' | 'yakunlandi';
 export type UrgencyLevel = 'YUKSAK' | 'O\'RTA' | 'PAST';
 
 export interface TimelineItem {

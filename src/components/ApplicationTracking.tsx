@@ -145,13 +145,12 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
   // YANGI -> KO'RIB_CHIQILMOQDA -> QABUL_QILINGAN / any assigned -> completed/YAKUNLANDI (or timeline shows completed)
   const getProgressStep = (sub: Submission): number => {
     const status = (sub.status || 'YANGI').toUpperCase();
+    if (status === 'YAKUNLANDI' || status === 'TUGALLANGAN' || sub.timeline?.some(tl => tl.status.toUpperCase() === 'YAKUNLANDI' || tl.status.toUpperCase() === 'TUGALLANGAN')) {
+      return 4;
+    }
     if (status === 'RAD_ETILGAN') return 1; // Show at step 1 but styled differently
     if (status === 'KO\'RIB_CHIQILMOQDA' || status === 'REVIEW') return 2;
-    if (status === 'QABUL_QILINGAN' || status === 'ACCEPTED' || (sub.assignedLawyerId && sub.assignedLawyerId !== 'tayinlanmagan')) {
-      // If completed timeline or custom finished state
-      if (status === 'YAKUNLANDI' || sub.timeline?.some(tl => tl.status === 'YAKUNLANDI')) {
-        return 4;
-      }
+    if (status === 'QABUL_QILINGAN' || status === 'ACCEPTED' || (sub.assignedLawyerId && sub.assignedLawyerId !== 'tayinlanmagan') || sub.assignedLawyer) {
       return 3;
     }
     return 1; // YANGI
@@ -159,6 +158,9 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
 
   const activeStep = submission ? getProgressStep(submission) : 1;
   const isRejected = submission && (submission.status || '').toUpperCase() === 'RAD_ETILGAN';
+  const completionLog = submission?.timeline?.find(tl => tl.status.toUpperCase() === 'YAKUNLANDI' || tl.status.toUpperCase() === 'TUGALLANGAN');
+  const completionDate = completionLog ? new Date(completionLog.timestamp).toLocaleDateString() : (submission && (submission.status === 'YAKUNLANDI' || submission.status === 'yakunlandi' || submission.status === 'TUGALLANGAN') ? new Date(submission.createdAt).toLocaleDateString() : '');
+  const completionComment = completionLog?.comment || '';
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in" id="application-tracking-container">
@@ -267,7 +269,7 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
               {/* Active line */}
               <div 
                 className={`absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full transition-all duration-500 ${
-                  isRejected ? 'bg-rose-600' : 'bg-blue-500'
+                  isRejected ? 'bg-rose-600' : (activeStep === 4 ? 'bg-green-500' : 'bg-blue-500')
                 }`}
                 style={{ width: `${isRejected ? 25 : ((activeStep - 1) / 3) * 100}%` }}
               ></div>
@@ -278,11 +280,13 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
                   const isCompletedStep = step < activeStep;
                   const isActiveStep = step === activeStep;
                   
-                  let stepIcon = step;
                   let dotColor = "bg-[#161B22] border-[#1F2937] text-gray-500";
                   
                   if (isRejected && step === 1) {
                     dotColor = "bg-rose-600 border-rose-500 text-white ring-4 ring-rose-950";
+                  } else if (activeStep === 4) {
+                    // All steps are completed green
+                    dotColor = "bg-green-600 border-green-500 text-white" + (step === 4 ? " ring-4 ring-green-950" : "");
                   } else if (isCompletedStep) {
                     dotColor = "bg-blue-600 border-blue-500 text-white";
                   } else if (isActiveStep) {
@@ -302,14 +306,41 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
 
             {/* Labels under dots */}
             <div className="grid grid-cols-4 text-center text-[10px] sm:text-xs text-gray-400 font-medium">
-              <span className={activeStep >= 1 ? (isRejected ? 'text-rose-400 font-bold' : 'text-blue-400 font-bold') : ''}>
+              <span className={activeStep >= 1 ? (isRejected ? 'text-rose-400 font-bold' : (activeStep === 4 ? 'text-green-400 font-bold' : 'text-blue-400 font-bold')) : ''}>
                 {isRejected ? (lang === 'ru' ? "Отклонено" : "Rad etildi") : t.status_yangi}
               </span>
-              <span className={activeStep >= 2 ? 'text-blue-400 font-bold' : ''}>{t.status_review}</span>
-              <span className={activeStep >= 3 ? 'text-blue-400 font-bold' : ''}>{t.status_assigned}</span>
-              <span className={activeStep >= 4 ? 'text-blue-400 font-bold' : ''}>{t.status_completed}</span>
+              <span className={activeStep >= 2 ? (activeStep === 4 ? 'text-green-400 font-bold' : 'text-blue-400 font-bold') : ''}>{t.status_review}</span>
+              <span className={activeStep >= 3 ? (activeStep === 4 ? 'text-green-400 font-bold' : 'text-blue-400 font-bold') : ''}>{t.status_assigned}</span>
+              <span className={activeStep >= 4 ? 'text-green-400 font-bold' : ''}>
+                {t.status_completed} {completionDate && `(${completionDate})`}
+              </span>
             </div>
           </div>
+
+          {/* Completed banner */}
+          {activeStep === 4 && (
+            <div className="bg-green-500/10 border border-green-500/20 p-5 rounded-2xl space-y-3 animate-fade-in text-xs">
+              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 border-b border-green-500/20 pb-2.5">
+                <span className="text-green-400 font-bold flex items-center gap-2 text-sm sm:text-base">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                  {lang === 'ru' ? 'Обращение успешно завершено!' : 'Murojaat muvaffaqiyatli yakunlandi!'}
+                </span>
+                {completionDate && (
+                  <span className="text-gray-400 font-mono">
+                    {lang === 'ru' ? 'Дата завершения:' : 'Yakunlangan sana:'} {completionDate}
+                  </span>
+                )}
+              </div>
+              {completionComment && (
+                <div className="space-y-1 pt-1">
+                  <p className="text-gray-400 font-bold">{lang === 'ru' ? 'Финальный отчет / Комментарий:' : 'Yakuniy hisobot / Izoh:'}</p>
+                  <p className="text-white bg-[#090D14] p-3 rounded-xl border border-green-500/10 font-sans italic leading-relaxed text-sm">
+                    "{completionComment}"
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Grid Information */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-[#090D14] p-5 rounded-2xl border border-[#1F2937]/50 text-xs">

@@ -605,8 +605,8 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
 
   // Count statistics
   const totalSubmissions = mySubmissions.length;
-  const activeSubmissions = mySubmissions.filter(s => s.status === 'YANGI' || s.status === "KO'RIB_CHIQILMOQDA").length;
-  const completedSubmissions = mySubmissions.filter(s => s.status === 'QABUL_QILINGAN' || s.status === 'RAD_ETILGAN').length;
+  const activeSubmissions = mySubmissions.filter(s => s.status === 'YANGI' || s.status === "KO'RIB_CHIQILMOQDA" || s.status === 'QABUL_QILINGAN').length;
+  const completedSubmissions = mySubmissions.filter(s => s.status === 'YAKUNLANDI' || s.status === 'yakunlandi' || s.status === 'TUGALLANGAN' || s.status === 'RAD_ETILGAN').length;
 
   // Preset avatars for beautiful mockup
   const avatars = [
@@ -1141,42 +1141,130 @@ export default function UserProfile({ lang, onLanguageChange }: UserProfileProps
                 <p className="text-sm text-gray-400">{t.no_submissions}</p>
               </div>
             ) : (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 {mySubmissions.map((sub) => {
+                  const isFinished = sub.status === 'YAKUNLANDI' || sub.status === 'yakunlandi' || sub.status === 'TUGALLANGAN';
                   return (
                     <div 
                       key={sub.id} 
-                      className="bg-[#161B22] border border-[#1F2937] p-4 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-3"
+                      className="bg-[#161B22] border border-[#1F2937] p-5 rounded-2xl flex flex-col gap-4 animate-fade-in"
                     >
-                      <div className="space-y-1.5 max-w-xl">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-[#1F2937]/30 pb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white">#ID-{sub.id.substring(0, 6)}</span>
-                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-mono font-bold ${
-                            sub.status === 'YANGI' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                            sub.status === "KO'RIB_CHIQILMOQDA" ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                            sub.status === 'QABUL_QILINGAN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                            'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          <span className="text-xs font-mono font-bold text-gray-400">
+                            {sub.applicationNumber || `#ID-${sub.id.substring(0, 6)}`}
+                          </span>
+                          <span className={`text-[10px] px-2.5 py-0.5 rounded-md font-sans font-bold border ${
+                            sub.status === 'YANGI' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                            sub.status === "KO'RIB_CHIQILMOQDA" ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                            sub.status === 'QABUL_QILINGAN' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            isFinished ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                            'bg-rose-500/10 text-rose-400 border-rose-500/20'
                           }`}>
                             {sub.status === 'YANGI' ? (lang === 'ru' ? 'НОВЫЙ' : 'YANGI') :
                              sub.status === "KO'RIB_CHIQILMOQDA" ? (lang === 'ru' ? 'НА РАССМОТРЕНИИ' : "KO'RIB_CHIQILMOQDA") :
                              sub.status === 'QABUL_QILINGAN' ? (lang === 'ru' ? 'ПРИНЯТО' : 'QABUL_QILINGAN') :
+                             isFinished ? (lang === 'ru' ? 'ЗАВЕРШЕНО' : 'YAKUNLANDI') :
                              (lang === 'ru' ? 'ОТКЛОНЕНО' : 'RAD_ETILGAN')}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-300 line-clamp-1">{sub.incidentDescription}</p>
-                        <p className="text-[10px] text-gray-500 font-mono">{t.incident_date}{new Date(sub.createdAt).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-gray-500 font-mono">
+                          {t.incident_date} {sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : '—'}
+                        </p>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        {sub.assignedLawyer ? (
-                          <div className="text-xs bg-blue-950/40 border border-blue-500/20 text-blue-300 px-3 py-1.5 rounded-lg">
-                            {t.lawyer_assigned}
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-300 font-sans leading-relaxed">{sub.incidentDescription || sub.problemDescription || '—'}</p>
+                        
+                        {/* Progress Bar for Profile application item */}
+                        <div className="pt-2">
+                          <div className="relative">
+                            <div className="absolute top-1/2 left-0 right-0 h-1 bg-[#0D1017] -translate-y-1/2 rounded-full"></div>
+                            {/* Fill line */}
+                            <div 
+                              className={`absolute top-1/2 left-0 h-1 -translate-y-1/2 rounded-full transition-all duration-500 ${
+                                sub.status === 'RAD_ETILGAN' ? 'bg-rose-600' :
+                                isFinished ? 'bg-green-500' : 'bg-blue-500'
+                              }`}
+                              style={{ 
+                                width: `${
+                                  sub.status === 'RAD_ETILGAN' ? '25%' :
+                                  isFinished ? '100%' :
+                                  sub.status === 'QABUL_QILINGAN' ? '75%' :
+                                  sub.status === "KO'RIB_CHIQILMOQDA" ? '50%' : '25%'
+                                }` 
+                              }}
+                            ></div>
+                            
+                            {/* Steps dots */}
+                            <div className="relative flex justify-between">
+                              {[1, 2, 3, 4].map((step) => {
+                                const isCompleted = isFinished ||
+                                  (step === 1 && sub.status !== 'YANGI') ||
+                                  (step === 2 && (sub.status === 'QABUL_QILINGAN' || sub.status === "KO'RIB_CHIQILMOQDA")) ||
+                                  (step === 3 && sub.status === 'QABUL_QILINGAN');
+                                const isActive = (step === 1 && sub.status === 'YANGI') ||
+                                  (step === 2 && sub.status === "KO'RIB_CHIQILMOQDA") ||
+                                  (step === 3 && sub.status === 'QABUL_QILINGAN') ||
+                                  (step === 4 && isFinished);
+
+                                let dotStyle = "bg-[#0D1017] border-gray-800 text-gray-600";
+                                if (sub.status === 'RAD_ETILGAN' && step === 1) {
+                                  dotStyle = "bg-rose-600 border-rose-500 text-white ring-2 ring-rose-950";
+                                } else if (isFinished) {
+                                  dotStyle = "bg-green-600 border-green-500 text-white";
+                                } else if (isCompleted) {
+                                  dotStyle = "bg-blue-600 border-blue-500 text-white";
+                                } else if (isActive) {
+                                  dotStyle = "bg-[#161B22] border-blue-500 text-blue-400 ring-2 ring-blue-950";
+                                }
+
+                                return (
+                                  <div key={step} className={`w-5 h-5 rounded-full border flex items-center justify-center font-bold text-[9px] transition-all ${dotStyle}`}>
+                                    {step}
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        ) : (
-                          <div className="text-xs bg-gray-800 text-gray-400 px-3 py-1.5 rounded-lg italic">
-                            {t.in_queue}
-                          </div>
-                        )}
+                        </div>
+                      </div>
+
+                      {/* Display lawyer or completed message */}
+                      <div className="flex flex-col justify-between items-start gap-3 pt-3 border-t border-[#1F2937]/30 text-xs">
+                        <div className="flex items-center justify-between w-full">
+                          {sub.assignedLawyer ? (
+                            <div className="text-[11px] text-blue-400 flex items-center gap-1">
+                              <User className="w-3.5 h-3.5 text-blue-500" />
+                              <span>{t.lawyer_assigned}</span>
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-gray-500 italic">
+                              {t.in_queue}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Completed Status Extra Details */}
+                        {isFinished && (() => {
+                          const log = sub.timeline?.find((tl: any) => tl.status === 'YAKUNLANDI' || tl.status === 'TUGALLANGAN' || tl.status === 'yakunlandi');
+                          const dateStr = log ? new Date(log.timestamp).toLocaleDateString() : (sub.createdAt ? new Date(sub.createdAt).toLocaleDateString() : '—');
+                          const commentStr = log?.comment || '';
+
+                          return (
+                            <div className="w-full text-left bg-green-500/5 border border-green-500/10 p-3 rounded-xl space-y-1.5 mt-1">
+                              <div className="flex justify-between items-center text-[10px] text-green-400 font-bold border-b border-green-500/10 pb-1">
+                                <span>{lang === 'ru' ? '✓ ЗАВЕРШЕНО' : '✓ YAKUNLANDI'}</span>
+                                <span className="font-mono">{dateStr}</span>
+                              </div>
+                              {commentStr && (
+                                <p className="text-gray-300 text-[11px] italic leading-normal">
+                                  "{commentStr}"
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   );

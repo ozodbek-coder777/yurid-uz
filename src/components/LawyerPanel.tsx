@@ -521,7 +521,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     if (submissions.length > 0 && currentUser) {
       const activeSubs = submissions.filter(s => {
         const isAssigned = currentUser.role === 'admin' || s.assignedLawyer === currentUser.id || s.assignedLawyer === currentUser.email;
-        return isAssigned && s.status !== 'TUGALLANGAN' && s.status !== 'RAD_ETILGAN' && s.deadline;
+        return isAssigned && s.status !== 'TUGALLANGAN' && s.status !== 'YAKUNLANDI' && s.status !== 'yakunlandi' && s.status !== 'RAD_ETILGAN' && s.deadline;
       });
 
       const alerts: typeof deadlineAlerts = [];
@@ -2587,42 +2587,45 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                     <p className="text-[10px] text-gray-500">{t.modal_notes_desc}</p>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <textarea
-                    value={editingNotes}
-                    onChange={(e) => setEditingNotes(e.target.value)}
-                    placeholder={t.modal_notes_placeholder}
-                    rows={3}
-                    className="flex-1 px-3 py-2.5 text-xs rounded-xl border border-[#1F2937] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-[#161B22]"
-                  />
+                
+                <textarea
+                  value={editingNotes}
+                  onChange={(e) => setEditingNotes(e.target.value)}
+                  placeholder={t.modal_notes_placeholder}
+                  className="w-full bg-[#0D1017] border border-[#1F2937] rounded-xl p-3.5 text-xs text-white focus:outline-none focus:border-blue-500 min-h-[90px] font-sans"
+                />
+                
+                <div className="flex justify-end">
                   <button
                     onClick={handleSaveNotes}
                     disabled={isSavingNotes}
-                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 sm:py-0 text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
-                    {isSavingNotes ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <span>{t.modal_notes_save}</span>
-                    )}
+                    {isSavingNotes ? '...' : t.modal_notes_save}
                   </button>
                 </div>
               </div>
 
-              {/* 1. VISUAL STATUS PROGRESS BAR (5 STAGES) */}
-              <div className="space-y-4 border-t border-[#1F2937] pt-5">
-                <h4 className="font-sans font-bold text-white text-xs uppercase tracking-wider text-gray-500">
-                  {lang === 'ru' ? 'ЭТАПЫ РАССМОТРЕНИЯ АППЛИКАЦИИ' : 'Arizaning ijro bosqichlari'}
-                </h4>
-                
+              {/* 1. KO'RIB CHIQISH BOSQICHINI BELGILASH / PROGRESS TRACKING */}
+              <div className="space-y-3.5 border-t border-[#1F2937] pt-5">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="font-sans font-bold text-white text-sm">
+                      {lang === 'ru' ? 'ЭТАПЫ РАССМОТРЕНИЯ' : 'Ko‘rib chiqish bosqichlari'}
+                    </h4>
+                    <p className="text-[10px] text-gray-500">
+                      {lang === 'ru' ? 'Текущий прогресс обработки этого обращения:' : 'Ushbu murojaatning joriy ko‘rib chiqilish jarayoni:'}
+                    </p>
+                  </div>
+                </div>
+
                 {selectedSub.status === 'RAD_ETILGAN' ? (
-                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-rose-400">
-                        {lang === 'ru' ? 'ОБРАЩЕНИЕ ОТКЛОНЕНО / ОТМЕНЕНО' : 'MUROJAAT RAD ETILGAN / BEKOR QILINGAN'}
-                      </p>
-                      <p className="text-[10px] text-gray-400">
+                  <div className="w-full bg-rose-500/5 rounded-2xl p-4 border border-rose-500/15">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
+                        <span className="text-sm">🚫</span>
+                      </div>
+                      <p className="text-xs text-rose-300 font-sans leading-relaxed">
                         {lang === 'ru' ? 'Это обращение было отклонено юристом или закрыто без исполнения.' : 'Ushbu murojaat yurist tomonidan rad etilgan yoki ijrosiz yopilgan.'}
                       </p>
                     </div>
@@ -2633,14 +2636,16 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                       {/* Connected Line Progress Bar */}
                       <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-800 z-0">
                         <div 
-                          className="h-full bg-blue-500 transition-all duration-500"
+                          className={`h-full transition-all duration-500 ${
+                            (selectedSub.status === 'TUGALLANGAN' || selectedSub.status === 'YAKUNLANDI' || selectedSub.status === 'yakunlandi') ? 'bg-green-500' : 'bg-blue-500'
+                          }`}
                           style={{
                             width: `${
                               selectedSub.status === 'YANGI' ? '0%' :
                               selectedSub.status === 'KO\'RIB_CHIQILMOQDA' ? '25%' :
                               selectedSub.status === 'ADVOKAT_TAYINLANGAN' || (selectedSub.assignedLawyer && selectedSub.status === 'QABUL_QILINGAN') ? '50%' :
                               selectedSub.status === 'QABUL_QILINGAN' ? '75%' :
-                              selectedSub.status === 'TUGALLANGAN' ? '100%' : '50%'
+                              (selectedSub.status === 'TUGALLANGAN' || selectedSub.status === 'YAKUNLANDI' || selectedSub.status === 'yakunlandi') ? '100%' : '50%'
                             }`
                           }}
                         ></div>
@@ -2651,7 +2656,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                         { id: 'KO_RIB_CHIQILMOQDA', label: lang === 'ru' ? 'Изучение' : 'Ko‘rib chiqilmoqda', icon: '👁️' },
                         { id: 'ADVOKAT_TAYINLANGAN', label: lang === 'ru' ? 'Назначен' : 'Advokat biriktirildi', icon: '👨‍⚖️' },
                         { id: 'ISH_DAVOM_ETMOQDA', label: lang === 'ru' ? 'В процессе' : 'Ish davom etmoqda', icon: '⚖️' },
-                        { id: 'TUGALLANGAN', label: lang === 'ru' ? 'Завершено' : 'Tugallangan', icon: '✅' }
+                        { id: 'YAKUNLANDI', label: lang === 'ru' ? 'Завершено' : 'Tugallangan', icon: '✅' }
                       ].map((stg, idx) => {
                         const currentStatus = selectedSub.status;
                         const hasLawyer = !!selectedSub.assignedLawyer;
@@ -2664,7 +2669,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                           'KO\'RIB_CHIQILMOQDA': 1,
                           'ADVOKAT_TAYINLANGAN': 2,
                           'QABUL_QILINGAN': 3,
-                          'TUGALLANGAN': 4
+                          'TUGALLANGAN': 4,
+                          'YAKUNLANDI': 4,
+                          'yakunlandi': 4
                         };
 
                         let currentIdx = statusIndexMap[currentStatus] !== undefined ? statusIndexMap[currentStatus] : 0;
@@ -2834,13 +2841,13 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                       <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{lang === 'ru' ? 'Новый статус:' : 'Yangi status:'}</label>
                       <select 
                         id="status-select-control"
-                        defaultValue={selectedSub.status}
+                        defaultValue={selectedSub.status === 'TUGALLANGAN' || selectedSub.status === 'yakunlandi' ? 'YAKUNLANDI' : selectedSub.status}
                         className="w-full bg-[#0D1017] border border-[#1F2937] text-white rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-blue-500"
                       >
                         <option value="YANGI">{lang === 'ru' ? 'Yuborilgan (Новый)' : 'Yuborilgan (Yangi)'}</option>
                         <option value="KO'RIB_CHIQILMOQDA">{lang === 'ru' ? 'Изучение (На рассмотрении)' : 'Ko‘rib chiqilmoqda'}</option>
                         <option value="QABUL_QILINGAN">{lang === 'ru' ? 'В работе (Принят)' : 'Ish davom etmoqda'}</option>
-                        <option value="TUGALLANGAN">{lang === 'ru' ? 'Завершено (Выполнен)' : 'Tugallangan (Ijro etildi)'}</option>
+                        <option value="YAKUNLANDI">{lang === 'ru' ? 'Завершено (Выполнен)' : 'Yakunlandi (Ijro etildi)'}</option>
                         <option value="RAD_ETILGAN">{lang === 'ru' ? 'Отклонено (Отказ)' : 'Rad etilgan'}</option>
                       </select>
                     </div>
@@ -3006,13 +3013,17 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
             {/* Modal Footer */}
             <div className="bg-[#11141B] px-6 py-4.5 border-t border-[#1F2937] flex flex-col sm:flex-row sm:justify-between items-center gap-3 shrink-0">
-              <button
-                onClick={() => handleDelete(selectedSub.id)}
-                className="w-full sm:w-auto bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-4 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{t.modal_delete_btn}</span>
-              </button>
+              {currentUser?.role === 'admin' ? (
+                <button
+                  onClick={() => handleDelete(selectedSub.id)}
+                  className="w-full sm:w-auto bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 px-4 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{t.modal_delete_btn}</span>
+                </button>
+              ) : (
+                <div></div>
+              )}
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="w-full sm:w-auto bg-[#161B22] border border-[#1F2937] hover:bg-[#1A1D26] text-white px-6 py-2.5 rounded-xl transition-all cursor-pointer text-xs font-semibold text-center"
