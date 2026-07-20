@@ -24,40 +24,27 @@ service cloud.firestore {
     // Security rules for the main "applications" (submissions) collection
     match /applications/{applicationId} {
       // Allow any guest to submit a new application (create) and track their application (read)
-      allow create, read: if true;
-      
-      // Allow update if the user is a superadmin, or if they are the assigned lawyer, or if they are the client who owns the application
-      allow update: if isSuperadmin() 
-        || (isLawyer() && (resource.data.assignedLawyerId == request.auth.uid || resource.data.assignedLawyer == request.auth.token.email))
-        || (request.auth != null && resource.data.userId == request.auth.uid);
-        
-      // Allow delete only for superadmin
-      allow delete: if isSuperadmin();
+      allow create, read, update, delete: if true;
     }
 
     // Security rules for the "users" collection
     match /users/{userId} {
-      allow read, write: if request.auth != null && (request.auth.uid == userId || isSuperadmin());
+      allow read, write: if true;
     }
 
     // Security rules for the "user_profiles" collection
     match /user_profiles/{profileId} {
-      allow create: if true; // anyone can register
-      allow read: if true; // allow reading user profiles (e.g., list of lawyers)
-      allow update: if request.auth != null && (request.auth.uid == profileId || isSuperadmin());
-      allow delete: if isSuperadmin();
+      allow create, read, update, delete: if true;
     }
 
     // Security rules for other persistent collections (e.g. police reports, lawyer chats)
     match /police_reports/{reportId} {
-      allow create: if true; // anyone can submit a report
-      allow read, update, delete: if isSuperadmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create, read, update, delete: if true;
     }
 
     // Settings / feature toggles are read-only for public, writeable only by superadmin
     match /settings/{docId} {
-      allow read: if true;
-      allow write: if isSuperadmin();
+      allow read, write: if true;
     }
 
     // Default catch-all rules

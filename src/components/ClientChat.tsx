@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info } from 'lucide-react';
+import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { saveApplicationToFirebase, getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase, deleteDraftFromFirebase } from '../utils/firebaseHelper';
@@ -28,6 +29,7 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState(''); // Stores email/phone
   const [phoneError, setPhoneError] = useState(''); // Stores email/phone error
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   useEffect(() => {
     if (currentUser) {
@@ -137,7 +139,31 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
       step_1: "Bog'lanish",
       step_2: "Tafsilotlar",
       step_3: "Tasdiqlash",
-      disclaimer_text: "DIQQAT: Tizim orqali taqdim etiladigan dastlabki hisobot va tahlillar sun'iy intellekt (AI) yordamida shakllantiriladi va rasmiy yuridik xulosa hisoblanmaydi. Batafsil maslahat uchun professional advokatlarimiz bilan bog'laning."
+      disclaimer_text: "DIQQAT: Tizim orqali taqdim etiladigan dastlabki hisobot va tahlillar sun'iy intellekt (AI) yordamida shakllantiriladi va rasmiy yuridik xulosa hisoblanmaydi. Batafsil maslahat uchun professional advokatlarimiz bilan bog'laning.",
+      faq_title: "Tez-tez beriladigan savollar (FAQ)",
+      faq_desc: "Savollaringizga tezkor javoblar (ariza topshirmasdan oldin bilib oling):",
+      faqs: [
+        {
+          q: "Murojaat yuborish mutlaqo bepulmi?",
+          a: "Ha, bizning platformamiz orqali dastlabki murojaat yuborish va uning sun'iy intellekt hamda advokatlarimiz tomonidan dastlabki tahlil qilinishi mutlaqo bepul. Qo'shimcha pullik xizmatlar faqat sizning roziligingiz bilan rasmiy shartnoma asosida amalga oshiriladi."
+        },
+        {
+          q: "Murojaatim ko'rib chiqilishi qancha vaqt oladi?",
+          a: "Arizalar odatda ish vaqtida 15-30 daqiqa ichida mutaxassislarimiz tomonidan o'rganib chiqiladi va siz kiritgan aloqa vositasi (telefon yoki elektron pochta) orqali aloqaga chiqiladi. Shoshilinch masalalar ustuvorlik asosida tezroq ko'rib chiqiladi."
+        },
+        {
+          q: "Ma'lumotlarim xavfsizligi va sir saqlanishi kafolatlanadimi?",
+          a: "Albatta. \"Advokatura to'g'risida\"gi qonunga muvofiq, siz taqdim etgan barcha ma'lumotlar advokatlik siri hisoblanadi va uchinchi shaxslarga mutlaqo oshkor etilmaydi. Ma'lumotlar xavfsiz bulutli tizimda shifrlangan holda saqlanadi."
+        },
+        {
+          q: "Qanday huquqiy masalalarda yordam bera olasiz?",
+          a: "Biz oilaviy nizolar (aliment, ajrashish), mehnat huquqi (noqonuniy bo'shatish, ish haqi), shartnomalar tuzish, moddiy yoki ma'naviy zarar, yo'l-transport hodisalari va tadbirkorlik huquqi kabi keng ko'lamli masalalarda yordam beramiz."
+        },
+        {
+          q: "Advokat tayinlangandan keyin jarayon qanday davom etadi?",
+          a: "Advokat tayinlangach, u siz bilan bog'lanib, vaziyatni batafsil muhokama qiladi, kerakli hujjatlarni to'plashda yordam beradi va sud yoki boshqa organlarda sizning huquqlaringizni himoya qilish rejasini tuzadi."
+        }
+      ]
     },
     ru: {
       bot_assistant_title: "Юридическая Заявка",
@@ -177,7 +203,31 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
       step_1: "Контакты",
       step_2: "Детали",
       step_3: "Готово",
-      disclaimer_text: "ВНИМАНИЕ: Предварительный анализ, предоставляемый данной системой, формируется искусственным интеллектом (ИИ) и не является официальным юридическим заключением. Для получения подробной консультации свяжитесь с нашими профессиональными адвокатами."
+      disclaimer_text: "ВНИМАНИЕ: Предварительный анализ, предоставляемый данной системой, формируется искусственным интеллектом (ИИ) и не является официальным юридическим заключением. Для получения подробной консультации свяжитесь с нашими профессиональными адвокатами.",
+      faq_title: "Часто задаваемые вопросы (FAQ)",
+      faq_desc: "Быстрые ответы на ваши вопросы (узнайте перед подачей обращения):",
+      faqs: [
+        {
+          q: "Действительно ли подача обращения бесплатна?",
+          a: "Да, отправка первичного обращения через нашу платформу и его предварительный анализ искусственным интеллектом и нашими адвокатами абсолютно бесплатны. Дополнительные платные услуги предоставляются только с вашего согласия на основе официального договора."
+        },
+        {
+          q: "Сколько времени занимает рассмотрение обращения?",
+          a: "Обычно заявки рассматриваются нашими специалистами в течение 15–30 минут в рабочее время, после чего они связываются с вами по указанным контактам. Срочные вопросы обрабатываются в приоритетном порядке."
+        },
+        {
+          q: "Гарантируется ли безопасность и конфиденциальность моих данных?",
+          a: "Безусловно. В соответствии с законом «Об адвокатуре», все предоставленные вами данные являются адвокатской тайной и строго конфиденциальны. Данные шифруются и хранятся на безопасных серверах."
+        },
+        {
+          q: "По каким юридическим вопросам вы можете помочь?",
+          a: "Мы помогаем по широкому спектру вопросов, включая семейные споры (алименты, развод), трудовое право (незаконное увольнение, задержка зарплаты), составление договоров, возмещение ущерба, ДТП и споры в сфере бизнеса."
+        },
+        {
+          q: "Как проходит процесс после назначения адвоката?",
+          a: "После назначения адвоката он свяжется с вами для детального обсуждения ситуации, поможет собрать необходимые документы и составит план защиты ваших прав в суде или других инстанциях."
+        }
+      ]
     }
   }[lang];
 
@@ -417,6 +467,64 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
             <div className="bg-amber-500/5 border border-amber-500/10 p-3.5 rounded-2xl text-[11px] text-amber-500/80 leading-relaxed flex gap-2">
               <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-500/80" />
               <span>{t.disclaimer_text}</span>
+            </div>
+
+            {/* Legal FAQs Accordion */}
+            <div className="border-t border-[#1F2937] pt-6 mt-6 space-y-3" id="legal-faqs-section">
+              <div className="flex items-center gap-2 mb-1">
+                <HelpCircle className="w-4.5 h-4.5 text-blue-400" />
+                <h5 className="text-xs font-semibold uppercase tracking-wider text-blue-400 font-mono">
+                  {t.faq_title}
+                </h5>
+              </div>
+              <p className="text-[11px] text-gray-400 mb-2">
+                {t.faq_desc}
+              </p>
+              
+              <div className="space-y-2">
+                {t.faqs.map((faq: any, idx: number) => {
+                  const isExpanded = expandedFaq === idx;
+                  return (
+                    <div 
+                      key={idx} 
+                      className="border border-[#1F2937] rounded-xl bg-[#161B22]/40 overflow-hidden transition-all duration-200"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedFaq(isExpanded ? null : idx)}
+                        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#161B22]/80 transition-colors cursor-pointer"
+                        id={`faq-btn-${idx}`}
+                      >
+                        <span className="text-xs font-medium text-gray-200 pr-4 leading-normal">
+                          {faq.q}
+                        </span>
+                        <span>
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-blue-400 shrink-0" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-gray-500 shrink-0" />
+                          )}
+                        </span>
+                      </button>
+                      
+                      <AnimatePresence initial={false}>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                          >
+                            <div className="px-4 pb-3.5 pt-1 text-[11px] text-gray-400 leading-relaxed border-t border-[#1F2937]/40 bg-[#0D1017]/40">
+                              {faq.a}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>

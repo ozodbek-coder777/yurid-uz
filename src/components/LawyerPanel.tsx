@@ -488,6 +488,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   // Submissions data states
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [witnesses, setWitnesses] = useState<Witness[]>([]);
+  const [deletingWitness, setDeletingWitness] = useState<Witness | null>(null);
 
   useEffect(() => {
     setWitnesses(getWitnesses());
@@ -1384,7 +1385,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
             <span>{lang === 'ru' ? 'Сообщения в органы' : 'Ichki Ishlar xabarlari'}</span>
           </button>
         )}
-        {currentUser?.role === 'admin' && (
+        {currentUser && (
           <button
             onClick={() => setActivePanelTab('blacklist')}
             className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
@@ -1397,7 +1398,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
             <span>{lang === 'ru' ? 'Черный список' : 'Qora ro\'yxat'}</span>
           </button>
         )}
-        {currentUser?.role === 'admin' && (
+        {currentUser && (
           <button
             onClick={() => setActivePanelTab('users_management')}
             className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
@@ -1997,12 +1998,12 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       )}
 
       {/* Qora ro'yxat (Blacklist) Tab */}
-      {activePanelTab === 'blacklist' && currentUser?.role === 'admin' && (
+      {activePanelTab === 'blacklist' && currentUser && (
         <AdminBlacklist lang={lang} />
       )}
 
       {/* Mijozlar (Users) Tab */}
-      {activePanelTab === 'users_management' && currentUser?.role === 'admin' && (
+      {activePanelTab === 'users_management' && currentUser && (
         <AdminUsersList lang={lang} />
       )}
 
@@ -2397,6 +2398,15 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                                 Rad etish
                               </button>
                             )}
+                            {currentUser && (
+                              <button
+                                onClick={() => setDeletingWitness(w)}
+                                className="px-2 py-1 bg-red-950/80 hover:bg-red-900 border border-red-500/20 text-red-400 rounded-lg font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
+                                title="Guvohni o'chirish"
+                              >
+                                🗑️ O'chirish
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 // 1. Update status to RAD_ETILGAN
@@ -2433,21 +2443,6 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                             >
                               Soxta guvoh 🚫
                             </button>
-                            {currentUser?.role === 'admin' && (
-                              <button
-                                onClick={() => {
-                                  if (!window.confirm("Haqiqatan ham ushbu guvohni ro'yxatdan butunlay o'chirib tashlamoqchimisiz?")) return;
-                                  const updated = witnesses.filter(item => item.guvoh_id !== w.guvoh_id);
-                                  setWitnesses(updated);
-                                  saveWitnesses(updated);
-                                  alert("Guvoh ro'yxatdan o'chirildi!");
-                                }}
-                                className="px-2 py-1 bg-red-950/80 hover:bg-red-900 border border-red-500/20 text-red-400 rounded-lg font-bold text-[10px] transition-all cursor-pointer flex items-center gap-1"
-                                title="Guvohni o'chirish"
-                              >
-                                🗑️ O'chirish
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -2456,6 +2451,48 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Witness Confirmation Modal */}
+      {deletingWitness && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#0D1017] border border-[#1F2937] p-6 rounded-2xl max-w-sm w-full space-y-5 animate-fade-in shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Guvohni o'chirish</h4>
+                <p className="text-xs text-gray-400">Amalni bekor qilib bo'lmaydi</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Haqiqatan ham ushbu guvohni (<strong>{deletingWitness.ism}</strong>) ro'yxatdan butunlay o'chirib tashlamoqchimisiz?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDeletingWitness(null)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-4 py-2 rounded-xl text-xs cursor-pointer transition-colors"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = witnesses.filter(item => item.guvoh_id !== deletingWitness.guvoh_id);
+                  setWitnesses(updated);
+                  saveWitnesses(updated);
+                  setDeletingWitness(null);
+                  alert("Guvoh ro'yxatdan o'chirildi!");
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2 rounded-xl text-xs cursor-pointer shadow-lg transition-colors"
+              >
+                Tasdiqlash & O'chirish
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -62,6 +62,7 @@ export default function AdminBlacklist({ lang }: AdminBlacklistProps) {
   // Restoration / Removal modal states
   const [restoringItem, setRestoringItem] = useState<BlacklistItem | null>(null);
   const [restorationReasonText, setRestorationReasonText] = useState('');
+  const [deletingItem, setDeletingItem] = useState<BlacklistItem | null>(null);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -129,9 +130,6 @@ export default function AdminBlacklist({ lang }: AdminBlacklistProps) {
 
   // Delete completely from database (hard delete)
   const handleDeleteHard = (id: string) => {
-    if (!window.confirm("Ushbu ma'lumotni qora ro'yxat bazasidan butunlay o'chirib tashlamoqchimisiz?")) {
-      return;
-    }
     setBlacklist(prev => prev.filter(item => item.id !== id));
   };
 
@@ -433,7 +431,7 @@ export default function AdminBlacklist({ lang }: AdminBlacklistProps) {
                         )}
 
                         <button
-                          onClick={() => handleDeleteHard(item.id)}
+                          onClick={() => setDeletingItem(item)}
                           className="bg-gray-800 hover:bg-red-950/30 text-gray-500 hover:text-red-400 p-1.5 rounded-lg transition-all cursor-pointer border border-[#1F2937]"
                           title="Butunlay o'chirish"
                         >
@@ -449,6 +447,44 @@ export default function AdminBlacklist({ lang }: AdminBlacklistProps) {
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {deletingItem && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#0D1017] border border-[#1F2937] p-6 rounded-2xl max-w-sm w-full space-y-5 animate-fade-in shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Qora ro'yxatdan o'chirish</h4>
+                <p className="text-xs text-gray-400">Amalni bekor qilib bo'lmaydi</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Haqiqatan ham <strong>{deletingItem.ism}</strong> foydalanuvchini qora ro'yxatdan butunlay o'chirib tashlamoqchimisiz?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDeletingItem(null)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-4 py-2 rounded-xl text-xs cursor-pointer transition-colors"
+              >
+                Bekor qilish
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDeleteHard(deletingItem.id);
+                  setDeletingItem(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2 rounded-xl text-xs cursor-pointer shadow-lg transition-colors"
+              >
+                Tasdiqlash & O'chirish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

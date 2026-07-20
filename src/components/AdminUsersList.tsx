@@ -22,6 +22,7 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingUser, setEditingUser] = useState<RegisteredUser | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<RegisteredUser | null>(null);
 
   // Load users from Firestore and listen real-time
   useEffect(() => {
@@ -59,7 +60,7 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
     });
 
     const unsubscribe = onSnapshotUserProfiles((data) => {
-      if (data && data.length > 0) {
+      if (data) {
         setUsers(data);
       }
     });
@@ -79,18 +80,10 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
   });
 
   const handleDelete = (id: string) => {
-    const confirmMsg = lang === 'uz' 
-      ? "Haqiqatan ham ushbu foydalanuvchini tizimdan butunlay o'chirmoqchimisiz? Ushbu amal ortga qaytarilmaydi!" 
-      : "Вы действительно хотите полностью удалить этого пользователя из системы? Это действие необратимо!";
-    
-    if (!window.confirm(confirmMsg)) return;
-
     deleteUserProfileFromFirebase(id);
     const updated = users.filter(u => u.id !== id);
     setUsers(updated);
     localStorage.setItem('user_profiles', JSON.stringify(updated));
-
-    // If deleted user was currently logged in, they will be logged out dynamically next time they load
     alert(lang === 'uz' ? "Foydalanuvchi muvaffaqiyatli o'chirildi!" : "Пользователь успешно удален!");
   };
 
@@ -242,7 +235,7 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => handleDelete(u.id)}
+                        onClick={() => setDeletingUser(u)}
                         className="p-1.5 bg-red-500/10 hover:bg-red-600 border border-red-500/20 hover:border-red-600 text-red-400 hover:text-white rounded-lg transition-all cursor-pointer"
                         title={lang === 'uz' ? "O'chirish" : "Удалить"}
                       >
@@ -349,6 +342,53 @@ export default function AdminUsersList({ lang }: AdminUsersListProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#0D1017] border border-[#1F2937] p-6 rounded-2xl max-w-sm w-full space-y-5 animate-fade-in shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">
+                  {lang === 'uz' ? "Mijozni o'chirish" : "Удаление клиента"}
+                </h4>
+                <p className="text-xs text-gray-400">
+                  {lang === 'uz' ? "Amalni bekor qilib bo'lmaydi" : "Действие необратимо"}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              {lang === 'uz' ? (
+                <>Haqiqatan ham <strong>{deletingUser.ism}</strong> foydalanuvchini tizimdan butunlay o'chirmoqchimisiz?</>
+              ) : (
+                <>Вы действительно хотите полностью удалить пользователя <strong>{deletingUser.ism}</strong> из системы?</>
+              )}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setDeletingUser(null)}
+                className="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-4 py-2 rounded-xl text-xs cursor-pointer transition-colors"
+              >
+                {lang === 'uz' ? "Bekor qilish" : "Отмена"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleDelete(deletingUser.id);
+                  setDeletingUser(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-bold px-5 py-2 rounded-xl text-xs cursor-pointer shadow-lg transition-colors"
+              >
+                {lang === 'uz' ? "Tasdiqlash & O'chirish" : "Подтвердить и удалить"}
+              </button>
+            </div>
           </div>
         </div>
       )}
