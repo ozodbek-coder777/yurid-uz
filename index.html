@@ -15,12 +15,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     
-    <!-- Asynchronous stylesheet loading for Google Fonts to prevent render blocking -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
-    </noscript>
+    <!-- Asynchronous stylesheet loading for Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -29,8 +25,8 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon-512x512.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     
-    <!-- Content Security Policy backup meta tag -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://*.googleapis.com https://*.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://generativelanguage.googleapis.com https://api.resend.com https://yurid.uz https://*.cloudflare.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com https://*.supabase.co https://cxnrwnzdrldtlsttgwar.supabase.co; frame-src 'self' https://*.zoom.us;" />
+    <!-- Security Headers / Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://*.googleapis.com https://*.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://generativelanguage.googleapis.com https://api.resend.com https://yurid.uz https://*.cloudflare.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com https://*.supabase.co https://cxnrwnzdrldtlsttgwar.supabase.co; frame-src 'self' https://*.zoom.us;" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -52,11 +48,6 @@
     <!-- Load config.js and gemini.js properly without triggering Vite build-time Rollup checks -->
     <script src="/config.js" defer></script>
     <script src="/gemini.js" defer></script>
-    <script>
-      window.addEventListener('load', function() {
-        console.log("Config va Gemini skriptlari muvaffaqiyatli yuklandi. API key:", window.GEMINI_API_KEY ? "Mavjud" : "Yo'q");
-      });
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

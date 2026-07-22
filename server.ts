@@ -23,6 +23,10 @@ app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://*.googleapis.com https://*.gstatic.com https://static.cloudflareinsights.com https://*.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://identitytoolkit.googleapis.com https://generativelanguage.googleapis.com https://api.resend.com https://yurid.uz https://*.cloudflare.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com https://*.supabase.co https://cxnrwnzdrldtlsttgwar.supabase.co; frame-src 'self' https://*.zoom.us;"
+  );
   next();
 });
 
