@@ -95,6 +95,11 @@ export interface LawyerDetails {
   subscriptionTier?: 'free' | 'premium';
   subscriptionExpiresAt?: string | null;
   activeCaseLimit?: number | null;
+  verificationStatus?: 'unverified' | 'pending_review' | 'verified' | 'rejected';
+  licenseNumber?: string;
+  licenseDocumentUrl?: string;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
 }
 
 export interface RegisteredUser {
@@ -110,6 +115,11 @@ export interface RegisteredUser {
   subscriptionTier?: 'free' | 'premium';
   subscriptionExpiresAt?: string | null;
   activeCaseLimit?: number | null;
+  verificationStatus?: 'unverified' | 'pending_review' | 'verified' | 'rejected';
+  licenseNumber?: string;
+  licenseDocumentUrl?: string;
+  verifiedAt?: string | null;
+  verifiedBy?: string | null;
 }
 
 export interface PaymentRequest {
@@ -120,11 +130,23 @@ export interface PaymentRequest {
   lawyerPhone?: string;
   amount: number;
   receiptImageUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
+  imageHash?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'flagged_duplicate';
   submittedAt: string;
   reviewedAt?: string | null;
   reviewedBy?: string | null;
   rejectionReason?: string | null;
+}
+
+export interface AuditLog {
+  id: string;
+  adminId: string;
+  adminEmail?: string;
+  action: 'approve_payment' | 'reject_payment' | 'manual_premium_grant' | 'manual_premium_revoke' | 'verify_lawyer' | 'reject_lawyer' | 'blacklist_add' | 'blacklist_remove';
+  targetUserId?: string;
+  targetUserName?: string;
+  details?: string | Record<string, any>;
+  timestamp: string;
 }
 
 export interface Payment {

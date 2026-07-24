@@ -58,6 +58,7 @@ import NewsManagement from './NewsManagement';
 import AdminPoliceReports from './AdminPoliceReports';
 import AdminBlacklist from './AdminBlacklist';
 import AdminUsersList from './AdminUsersList';
+import AdminAuditLogs from './AdminAuditLogs';
 import { checkAndAutoBlacklist, getBlacklistedUser } from '../utils/blacklist';
 import { generateSubmissionPDF, exportSubmissionsToExcel } from '../utils/reportGenerator';
 import { getUnreadCount } from '../utils/chatHelper';
@@ -1460,6 +1461,20 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         </button>
         {currentUser?.role === 'admin' && (
           <button
+            onClick={() => setActivePanelTab('audit_logs')}
+            className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activePanelTab === 'audit_logs'
+                ? 'border-amber-500 text-amber-400 font-bold bg-amber-500/10'
+                : 'border-transparent text-amber-400/80 hover:text-amber-300'
+            }`}
+          >
+            <Shield className="w-4 h-4 text-amber-400" />
+            <span>{lang === 'ru' ? 'Аудит действий' : 'Audit Logs'}</span>
+          </button>
+        )}
+
+        {currentUser?.role === 'admin' && (
+          <button
             onClick={() => setActivePanelTab('settings')}
             className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activePanelTab === 'settings'
@@ -1944,6 +1959,56 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                   {/* Admin controls */}
                   {!isDefaultAdmin && (
                     <div className="pt-2 space-y-2">
+                      {/* Verification Status Badge & Action */}
+                      <div className="flex items-center justify-between p-2 rounded-xl bg-[#161B22] border border-[#1F2937]">
+                        <div className="flex items-center gap-1.5">
+                          <Shield className={`w-3.5 h-3.5 ${l.verificationStatus === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                          <span className="text-[11px] font-semibold text-gray-300">
+                            Status: {l.verificationStatus === 'verified' ? (
+                              <strong className="text-emerald-400">Verified (Tasdiqlangan)</strong>
+                            ) : l.verificationStatus === 'rejected' ? (
+                              <strong className="text-rose-400">Rad etilgan</strong>
+                            ) : (
+                              <strong className="text-amber-400">Verifikatsiya qilinmagan</strong>
+                            )}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={async () => {
+                            const newStatusAction = l.verificationStatus === 'verified' ? 'reject' : 'verify';
+                            try {
+                              const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/verify`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: newStatusAction, reviewedBy: currentUser?.name || 'superadmin' })
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                const newStatus = data.verificationStatus || (newStatusAction === 'verify' ? 'verified' : 'rejected');
+                                const updated = lawyers.map(item => 
+                                  item.id === l.id ? { ...item, verificationStatus: newStatus } : item
+                                );
+                                setLawyers(updated);
+                                localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                                alert(data.message || "Verifikatsiya statusi yangilandi!");
+                              } else {
+                                alert(data.error || "Xatolik yuz berdi.");
+                              }
+                            } catch (err) {
+                              alert("Serverga ulanishda xatolik.");
+                            }
+                          }}
+                          className={`px-2 py-1 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                            l.verificationStatus === 'verified'
+                              ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'
+                          }`}
+                        >
+                          {l.verificationStatus === 'verified' ? 'Bekor qilish' : 'Verifikatsiya qilish'}
+                        </button>
+                      </div>
+
                       <div className="flex gap-2">
                         <button
                           onClick={async () => {
@@ -2096,6 +2161,11 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       {/* Mijozlar (Users) Tab */}
       {activePanelTab === 'users_management' && currentUser && (
         <AdminUsersList lang={lang} />
+      )}
+
+      {/* Audit Logs Tab */}
+      {activePanelTab === 'audit_logs' && currentUser?.role === 'admin' && (
+        <AdminAuditLogs lang={lang} />
       )}
 
       {/* Profil Tab */}

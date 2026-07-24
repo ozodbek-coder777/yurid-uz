@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import dotenv from "dotenv";
@@ -875,17 +876,33 @@ app.patch("/api/submissions/:id/notes", async (req, res) => {
 // API: Assign submission to a lawyer
 app.patch("/api/submissions/:id/assign", async (req, res) => {
   const { id } = req.params;
-  const { assignedLawyer, lawyerId, subscriptionTier } = req.body;
+  const { assignedLawyer, lawyerId } = req.body;
   const submissions = readSubmissions();
+  const users = readUsers();
 
-  // Check active case limit for free lawyer if assignedLawyer is specified
-  if (assignedLawyer) {
+  if (assignedLawyer || lawyerId) {
+    // Look up lawyer canonical record
+    const targetLawyer = users.find(u => 
+      (lawyerId && String(u.id) === String(lawyerId)) || 
+      (assignedLawyer && (u.ism === assignedLawyer || u.email === assignedLawyer || u.id === assignedLawyer))
+    );
+
+    // QADAM 1 Check: Lawyer Verification Status
+    if (targetLawyer && targetLawyer.verificationStatus && targetLawyer.verificationStatus !== 'verified') {
+      return res.status(403).json({
+        error: "Advokat hali rasmiy verifikatsiyadan o'tmagan! Ariza qabul qilish uchun verifikatsiya tasdiqlanishini kuting.",
+        verificationRequired: true,
+        verificationStatus: targetLawyer.verificationStatus
+      });
+    }
+
+    // QADAM 3 Check: Enforce active case limit on Backend
     const activeCasesCount = submissions.filter(
       s => (s.assignedLawyer === assignedLawyer || (lawyerId && s.assignedLawyerId === lawyerId)) &&
            s.status !== 'YAKUNLANDI' && s.status !== 'RAD_ETILGAN' && s.status !== 'TUGALLANGAN' && s.status !== 'yakunlandi'
     ).length;
 
-    const isFree = subscriptionTier !== 'premium';
+    const isFree = !targetLawyer || targetLawyer.subscriptionTier !== 'premium';
     if (isFree && activeCasesCount >= 10) {
       return res.status(403).json({
         error: "Bepul (Free) tarifda maksimum 10 ta faol ish olib borish mumkin. Davom etish uchun Premium obunani faollashtiring!",
@@ -911,10 +928,11 @@ app.patch("/api/submissions/:id/assign", async (req, res) => {
   }
 });
 
-// Payments storage
+// Payments & Audit Logs storage
 const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
 const PAYMENT_REQUESTS_FILE = path.join(DATA_DIR, "payment_requests.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
+const AUDIT_LOGS_FILE = path.join(DATA_DIR, "audit_logs.json");
 
 const readPayments = (): any[] => {
   if (!fs.existsSync(PAYMENTS_FILE)) return [];
@@ -967,48 +985,62 @@ const writeUsers = (data: any[]) => {
   }
 };
 
-// API: Create payment for Premium subscription (Payme / Click)
-app.post("/api/payments/create", (req, res) => {
-  const { lawyerId, amount = 200000, provider = "payme" } = req.body;
-  if (!lawyerId) {
-    return res.status(400).json({ error: "Advokat ID kiritilishi shart." });
+const readAuditLogs = (): any[] => {
+  if (!fs.existsSync(AUDIT_LOGS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(AUDIT_LOGS_FILE, "utf8"));
+  } catch {
+    return [];
   }
+};
 
-  const payments = readPayments();
-  const paymentId = "pay_" + Date.now();
-  const transactionId = "tx_" + provider + "_" + Math.floor(10000000 + Math.random() * 90000000);
+const writeAuditLogs = (data: any[]) => {
+  try {
+    fs.writeFileSync(AUDIT_LOGS_FILE, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error writing audit logs", err);
+  }
+};
 
-  const newPayment = {
-    id: paymentId,
-    lawyerId,
-    amount: Number(amount),
-    provider,
-    status: "pending",
-    transactionId,
-    createdAt: new Date().toISOString(),
-    completedAt: null
+const recordAuditLog = async (
+  adminId: string,
+  adminEmail: string,
+  action: string,
+  targetUserId?: string,
+  targetUserName?: string,
+  details?: any
+) => {
+  const log = {
+    id: "log_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+    adminId: adminId || "superadmin",
+    adminEmail: adminEmail || "admin@yurid.uz",
+    action,
+    targetUserId: targetUserId || "",
+    targetUserName: targetUserName || "",
+    details: details || {},
+    timestamp: new Date().toISOString()
   };
 
-  payments.unshift(newPayment);
-  writePayments(payments);
+  const logs = readAuditLogs();
+  logs.unshift(log);
+  writeAuditLogs(logs);
 
-  let checkoutUrl = "";
-  if (provider === "payme") {
-    const paymeMerchantId = process.env.PAYME_MERCHANT_ID || "65a1234567890abcdef12345";
-    const params = `m=${paymeMerchantId};ac.lawyer_id=${lawyerId};a=${amount * 100};c=${paymentId}`;
-    const b64 = Buffer.from(params).toString("base64");
-    checkoutUrl = `https://checkout.paycom.uz/${b64}`;
-  } else {
-    const clickServiceId = process.env.CLICK_SERVICE_ID || "12345";
-    const clickMerchantId = process.env.CLICK_MERCHANT_ID || "67890";
-    checkoutUrl = `https://my.click.uz/services/pay?service_id=${clickServiceId}&merchant_id=${clickMerchantId}&amount=${amount}&transaction_param=${paymentId}`;
+  const { firestoreDb } = initFirebase();
+  if (isFirestoreSupported && firestoreDb) {
+    try {
+      const ref = doc(firestoreDb, "auditLogs", log.id);
+      await setDoc(ref, log, { merge: true }).catch(() => {});
+    } catch (e) {
+      console.error("Firebase audit log write error:", e);
+    }
   }
+  return log;
+};
 
-  return res.json({
-    success: true,
-    payment: newPayment,
-    checkoutUrl,
-    message: `${provider.toUpperCase()} to'lov arizasi yaratildi.`
+// API: Payment gateway notice (Payme / Click currently disabled, manual Telegram verification active)
+app.post("/api/payments/create", (req, res) => {
+  return res.status(400).json({
+    error: "Payme va Click to'lov tizimlari hozircha o'chirilgan. To'lov faqat Telegram (@ozod_legend) orqali qo'lda qabul qilinadi va chek yuklash orqali tasdiqlanadi."
   });
 });
 
@@ -1168,13 +1200,15 @@ app.post("/api/click/webhook", async (req, res) => {
 app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, days = 30 } = req.body || {}; // action: "activate" | "deactivate"
+    const { action, days = 30, adminId = "superadmin", adminEmail = "admin@yurid.uz" } = req.body || {}; // action: "activate" | "deactivate"
 
     const expiresAt = action === "activate" 
       ? new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString() 
       : null;
     const subscriptionTier = action === "activate" ? "premium" : "free";
     const activeCaseLimit = action === "activate" ? null : 10;
+
+    let targetLawyerName = "Advokat";
 
     // Update in users list
     try {
@@ -1184,11 +1218,22 @@ app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
         users[index].subscriptionTier = subscriptionTier;
         users[index].subscriptionExpiresAt = expiresAt;
         users[index].activeCaseLimit = activeCaseLimit;
+        targetLawyerName = users[index].ism || users[index].email || "Advokat";
         writeUsers(users);
       }
     } catch (err) {
       console.error("Local user list subscription update error:", err);
     }
+
+    // Record Audit Log
+    recordAuditLog(
+      adminId,
+      adminEmail,
+      action === "activate" ? "manual_premium_grant" : "manual_premium_revoke",
+      id,
+      targetLawyerName,
+      { days, expiresAt, subscriptionTier }
+    ).catch(() => {});
 
     // Update in Firestore if available
     try {
@@ -1230,6 +1275,83 @@ app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
   }
 });
 
+// API: Super Admin - Lawyer Verification Management (QADAM 1)
+app.post("/api/admin/lawyers/:id/verify", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { action, reviewedBy = "superadmin", adminEmail = "admin@yurid.uz" } = req.body || {}; // action: "verify" | "reject"
+
+    if (!action || (action !== "verify" && action !== "reject")) {
+      return res.status(400).json({ error: "Action 'verify' yoki 'reject' bo'lishi shart." });
+    }
+
+    const verificationStatus = action === "verify" ? "verified" : "rejected";
+    const verifiedAt = new Date().toISOString();
+    let targetLawyerName = "Advokat";
+
+    // Update in local users list
+    const users = readUsers();
+    const index = users.findIndex(u => String(u.id) === String(id) || String(u.email) === String(id));
+    if (index !== -1) {
+      users[index].verificationStatus = verificationStatus;
+      users[index].verifiedAt = verifiedAt;
+      users[index].verifiedBy = reviewedBy;
+      targetLawyerName = users[index].ism || users[index].email || "Advokat";
+      writeUsers(users);
+    }
+
+    // Record Audit Log
+    recordAuditLog(
+      reviewedBy,
+      adminEmail,
+      action === "verify" ? "verify_lawyer" : "reject_lawyer",
+      id,
+      targetLawyerName,
+      { verificationStatus, verifiedAt }
+    ).catch(() => {});
+
+    // Update in Firestore
+    const { firestoreDb } = initFirebase();
+    if (isFirestoreSupported && firestoreDb) {
+      try {
+        const userRef = doc(firestoreDb, "users", id);
+        const profileRef = doc(firestoreDb, "user_profiles", id);
+        const verUpdates = {
+          verificationStatus,
+          verifiedAt,
+          verifiedBy: reviewedBy
+        };
+        await setDoc(userRef, verUpdates, { merge: true }).catch(() => {});
+        await setDoc(profileRef, verUpdates, { merge: true }).catch(() => {});
+      } catch (fErr) {
+        console.error("Firestore lawyer verification update error:", fErr);
+      }
+    }
+
+    return res.json({
+      success: true,
+      lawyerId: id,
+      verificationStatus,
+      message: action === "verify" 
+        ? `"${targetLawyerName}" advokat rasman verifikatsiyadan o'tkazildi!` 
+        : `"${targetLawyerName}" advokat verifikatsiyasi rad etildi.`
+    });
+  } catch (err: any) {
+    console.error("Error in lawyer verification route:", err);
+    return res.status(500).json({ error: "Verifikatsiyani saqlashda xatolik yuz berdi." });
+  }
+});
+
+// API: Get Audit Logs list (QADAM 5)
+app.get("/api/audit-logs", async (_req, res) => {
+  try {
+    const logs = readAuditLogs();
+    return res.json(logs);
+  } catch (err) {
+    return res.status(500).json({ error: "Audit loglarni olishda xatolik yuz berdi." });
+  }
+});
+
 // API: Get payments list
 app.get("/api/payments", (req, res) => {
   const { lawyerId } = req.query;
@@ -1250,7 +1372,7 @@ app.get("/api/payment-requests", (req, res) => {
   return res.json(requests);
 });
 
-// API: Create new payment request with receipt image
+// API: Create new payment request with receipt image (QADAM 2: Duplicate Image Hash Detection)
 app.post("/api/payment-requests/create", async (req, res) => {
   try {
     const { lawyerId, lawyerName, lawyerEmail, lawyerPhone, amount = 200000, receiptImageUrl } = req.body || {};
@@ -1263,6 +1385,11 @@ app.post("/api/payment-requests/create", async (req, res) => {
     }
 
     const requests = readPaymentRequests();
+
+    // Check for duplicate receipt image hash (SHA-256)
+    const imageHash = crypto.createHash("sha256").update(String(receiptImageUrl)).digest("hex");
+    const isDuplicateHash = requests.some(r => r.imageHash === imageHash && r.status !== 'rejected');
+
     const existingPending = requests.find(r => (r.lawyerId === lawyerId || (lawyerEmail && r.lawyerEmail === lawyerEmail)) && r.status === 'pending');
     if (existingPending) {
       return res.status(400).json({ 
@@ -1272,6 +1399,8 @@ app.post("/api/payment-requests/create", async (req, res) => {
       });
     }
 
+    const initialStatus = isDuplicateHash ? "flagged_duplicate" : "pending";
+
     const newRequest = {
       id: "prq_" + Date.now(),
       lawyerId,
@@ -1280,11 +1409,12 @@ app.post("/api/payment-requests/create", async (req, res) => {
       lawyerPhone: lawyerPhone || "",
       amount: Number(amount) || 200000,
       receiptImageUrl,
-      status: "pending",
+      imageHash,
+      status: initialStatus,
       submittedAt: new Date().toISOString(),
       reviewedAt: null,
       reviewedBy: null,
-      rejectionReason: null
+      rejectionReason: isDuplicateHash ? "DUBLE CHEK: Ushbu chek rasmi ilgari tizimga yuklangan deb topildi." : null
     };
 
     requests.unshift(newRequest);
@@ -1301,10 +1431,15 @@ app.post("/api/payment-requests/create", async (req, res) => {
       }
     }
 
+    const responseMsg = isDuplicateHash 
+      ? "Diqqat: Ushbu to'lov cheki ilgari ishlatilgan deb topildi. So'rovingiz admin tomonidan sinchkovlik bilan tekshiriladi."
+      : "To'lov cheki muvaffaqiyatli yuborildi. So'rovingiz ko'rib chiqilmoqda (1-24 soat).";
+
     return res.json({
       success: true,
       request: newRequest,
-      message: "To'lov cheki muvaffaqiyatli yuborildi. So'rovingiz ko'rib chiqilmoqda (1-24 soat)."
+      isFlagged: isDuplicateHash,
+      message: responseMsg
     });
   } catch (err: any) {
     console.error("Payment request creation error:", err);
@@ -1316,7 +1451,7 @@ app.post("/api/payment-requests/create", async (req, res) => {
 app.post("/api/payment-requests/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
-    const { reviewedBy = "superadmin" } = req.body || {};
+    const { reviewedBy = "superadmin", adminEmail = "admin@yurid.uz" } = req.body || {};
 
     const requests = readPaymentRequests();
     const index = requests.findIndex(r => r.id === id);
@@ -1336,6 +1471,16 @@ app.post("/api/payment-requests/:id/approve", async (req, res) => {
       reviewedBy
     };
     writePaymentRequests(requests);
+
+    // Record Audit Log
+    recordAuditLog(
+      reviewedBy,
+      adminEmail,
+      "approve_payment",
+      reqData.lawyerId,
+      reqData.lawyerName,
+      { requestId: id, amount: reqData.amount, expiresAt }
+    ).catch(() => {});
 
     // Activate Premium for Lawyer in Users
     const lawyerId = reqData.lawyerId;
@@ -1388,7 +1533,7 @@ app.post("/api/payment-requests/:id/approve", async (req, res) => {
 app.post("/api/payment-requests/:id/reject", async (req, res) => {
   try {
     const { id } = req.params;
-    const { rejectionReason, reviewedBy = "superadmin" } = req.body || {};
+    const { rejectionReason, reviewedBy = "superadmin", adminEmail = "admin@yurid.uz" } = req.body || {};
 
     if (!rejectionReason || !rejectionReason.trim()) {
       return res.status(400).json({ error: "Rad etish sababini kiritish shart!" });
@@ -1412,6 +1557,16 @@ app.post("/api/payment-requests/:id/reject", async (req, res) => {
       reviewedBy
     };
     writePaymentRequests(requests);
+
+    // Record Audit Log
+    recordAuditLog(
+      reviewedBy,
+      adminEmail,
+      "reject_payment",
+      reqData.lawyerId,
+      reqData.lawyerName,
+      { requestId: id, rejectionReason: rejectionReason.trim() }
+    ).catch(() => {});
 
     // Update Firestore
     const { firestoreDb } = initFirebase();

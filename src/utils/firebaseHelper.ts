@@ -1,4 +1,4 @@
-import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest, AuditLog } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -706,6 +706,61 @@ export async function updatePaymentRequestStatusInFirebase(
   } catch (error) {
     console.error("PaymentRequest statusini yangilashda xatolik:", error);
     return false;
+  }
+}
+
+/**
+ * 34. Audit Log'ni Firestore-ga saqlash
+ */
+export async function saveAuditLogToFirebase(log: AuditLog): Promise<boolean> {
+  const path = 'auditLogs';
+  try {
+    await setDoc(doc(db, path, log.id), log);
+    return true;
+  } catch (error) {
+    console.error("AuditLog saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 35. Audit Log'larni Firestore-dan olish
+ */
+export async function getAuditLogsFromFirebase(): Promise<AuditLog[]> {
+  const path = 'auditLogs';
+  try {
+    const q = query(collection(db, path), orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    const logs: AuditLog[] = [];
+    snapshot.forEach((docSnap) => {
+      logs.push(docSnap.data() as AuditLog);
+    });
+    return logs;
+  } catch (error) {
+    console.error("AuditLogs olishda xatolik:", error);
+    return [];
+  }
+}
+
+/**
+ * 36. Realtime Audit Logs listener
+ */
+export function onSnapshotAuditLogs(callback: (logs: AuditLog[]) => void): () => void {
+  const path = 'auditLogs';
+  try {
+    const q = query(collection(db, path), orderBy('timestamp', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const logs: AuditLog[] = [];
+      snapshot.forEach((docSnap) => {
+        logs.push(docSnap.data() as AuditLog);
+      });
+      callback(logs);
+    }, (error) => {
+      console.error("AuditLogs listener error:", error);
+    });
+  } catch (error) {
+    console.error("onSnapshotAuditLogs error:", error);
+    return () => {};
   }
 }
 
