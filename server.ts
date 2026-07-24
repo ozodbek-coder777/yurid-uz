@@ -1297,7 +1297,7 @@ app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
 app.post("/api/admin/lawyers/:id/verify", async (req, res) => {
   try {
     const { id } = req.params;
-    const { action, reviewedBy = "superadmin", adminEmail = "admin@yurid.uz" } = req.body || {}; // action: "verify" | "reject"
+    const { action, reviewedBy = "superadmin", adminEmail = "admin@yurid.uz", name } = req.body || {}; // action: "verify" | "reject"
 
     if (!action || (action !== "verify" && action !== "reject")) {
       return res.status(400).json({ error: "Action 'verify' yoki 'reject' bo'lishi shart." });
@@ -1305,7 +1305,7 @@ app.post("/api/admin/lawyers/:id/verify", async (req, res) => {
 
     const verificationStatus = action === "verify" ? "verified" : "rejected";
     const verifiedAt = new Date().toISOString();
-    let targetLawyerName = "Advokat";
+    let targetLawyerName = name || "Advokat";
 
     // Update in local users list
     const users = readUsers();
@@ -1314,9 +1314,19 @@ app.post("/api/admin/lawyers/:id/verify", async (req, res) => {
       users[index].verificationStatus = verificationStatus;
       users[index].verifiedAt = verifiedAt;
       users[index].verifiedBy = reviewedBy;
-      targetLawyerName = users[index].ism || users[index].email || "Advokat";
-      writeUsers(users);
+      targetLawyerName = users[index].ism || users[index].name || users[index].email || targetLawyerName;
+    } else {
+      users.push({
+        id,
+        ism: targetLawyerName,
+        email: `${id}@yurid.uz`,
+        role: "lawyer",
+        verificationStatus,
+        verifiedAt,
+        verifiedBy: reviewedBy
+      });
     }
+    writeUsers(users);
 
     // Record Audit Log
     recordAuditLog(
@@ -1357,6 +1367,58 @@ app.post("/api/admin/lawyers/:id/verify", async (req, res) => {
   } catch (err: any) {
     console.error("Error in lawyer verification route:", err);
     return res.status(500).json({ error: "Verifikatsiyani saqlashda xatolik yuz berdi." });
+  }
+});
+
+// API: Lawyer Submit Verification Details & License Scan (QADAM 1)
+app.post("/api/lawyer/submit-verification", async (req, res) => {
+  try {
+    const { lawyerId, licenseNumber, licenseDocumentUrl, name, email, specialization } = req.body || {};
+    if (!lawyerId) {
+      return res.status(400).json({ error: "Lawyer ID talab qilinadi." });
+    }
+
+    const users = readUsers();
+    let index = users.findIndex(u => String(u.id) === String(lawyerId) || String(u.email) === String(email || lawyerId));
+    
+    const verData = {
+      id: lawyerId,
+      ism: name || "Advokat",
+      email: email || `${lawyerId}@yurid.uz`,
+      role: "lawyer",
+      licenseNumber: licenseNumber || "",
+      licenseDocumentUrl: licenseDocumentUrl || "",
+      verificationStatus: "pending_review",
+      specialization: specialization || "Umumiy huquq",
+      submittedAt: new Date().toISOString()
+    };
+
+    if (index !== -1) {
+      users[index] = { ...users[index], ...verData };
+    } else {
+      users.push(verData);
+    }
+    writeUsers(users);
+
+    // Sync to Firestore if active
+    const { firestoreDb } = initFirebase();
+    if (isFirestoreSupported && firestoreDb) {
+      try {
+        const userRef = doc(firestoreDb, "users", lawyerId);
+        const profileRef = doc(firestoreDb, "user_profiles", lawyerId);
+        await setDoc(userRef, verData, { merge: true }).catch(() => {});
+        await setDoc(profileRef, verData, { merge: true }).catch(() => {});
+      } catch (e) {}
+    }
+
+    return res.json({
+      success: true,
+      verificationStatus: "pending_review",
+      message: "Litsenziya ma'lumotlari va hujjat skaneri qabul qilindi. Operatorlarimiz 24 soat ichida tekshirib chiqadi."
+    });
+  } catch (err) {
+    console.error("Error submitting lawyer verification:", err);
+    return res.status(500).json({ error: "Verifikatsiya so'rovini saqlashda xatolik." });
   }
 });
 

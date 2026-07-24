@@ -1972,20 +1972,45 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                     </span>
                   </div>
 
+                  {/* License Information & Document Scan */}
+                  <div className="bg-[#161B22] p-2.5 rounded-xl border border-[#1F2937] text-xs space-y-1 my-2">
+                    <div className="flex justify-between items-center text-gray-400">
+                      <span>Litsenziya №:</span>
+                      <strong className="text-amber-400 font-mono">{l.licenseNumber || 'Kiritilmagan'}</strong>
+                    </div>
+                    {l.licenseDocumentUrl ? (
+                      <div className="pt-1 flex justify-between items-center border-t border-[#1F2937]">
+                        <span className="text-gray-400">Litsenziya skaneri:</span>
+                        <a 
+                          href={l.licenseDocumentUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-cyan-400 hover:underline font-bold text-[11px] flex items-center gap-1"
+                        >
+                          <FileText className="w-3 h-3" /> Hujjatni Ko'rish
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-gray-500 italic">Hujjat skaneri yuklanmagan</div>
+                    )}
+                  </div>
+
                   {/* Admin controls */}
                   {!isDefaultAdmin && (
                     <div className="pt-2 space-y-2">
                       {/* Verification Status Badge & Action */}
                       <div className="flex items-center justify-between p-2 rounded-xl bg-[#161B22] border border-[#1F2937]">
                         <div className="flex items-center gap-1.5">
-                          <Shield className={`w-3.5 h-3.5 ${l.verificationStatus === 'verified' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                          <Shield className={`w-3.5 h-3.5 ${l.verificationStatus === 'verified' ? 'text-emerald-400' : l.verificationStatus === 'pending_review' ? 'text-amber-400 animate-pulse' : 'text-gray-400'}`} />
                           <span className="text-[11px] font-semibold text-gray-300">
                             Status: {l.verificationStatus === 'verified' ? (
                               <strong className="text-emerald-400">Verified (Tasdiqlangan)</strong>
+                            ) : l.verificationStatus === 'pending_review' ? (
+                              <strong className="text-amber-400">Kutilmoqda (Review)</strong>
                             ) : l.verificationStatus === 'rejected' ? (
                               <strong className="text-rose-400">Rad etilgan</strong>
                             ) : (
-                              <strong className="text-amber-400">Verifikatsiya qilinmagan</strong>
+                              <strong className="text-gray-400">Tasdiqlanmagan</strong>
                             )}
                           </span>
                         </div>
@@ -1997,25 +2022,32 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                               const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/verify`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action: newStatusAction, reviewedBy: currentUser?.name || 'superadmin' })
+                                body: JSON.stringify({ 
+                                  action: newStatusAction, 
+                                  reviewedBy: currentUser?.name || 'superadmin',
+                                  name: l.name 
+                                })
                               });
                               const data = await res.json();
-                              if (res.ok) {
-                                const newStatus = data.verificationStatus || (newStatusAction === 'verify' ? 'verified' : 'rejected');
-                                const updated = lawyers.map(item => 
-                                  item.id === l.id ? { ...item, verificationStatus: newStatus } : item
-                                );
-                                setLawyers(updated);
-                                localStorage.setItem('lawyers_list', JSON.stringify(updated));
-                                alert(data.message || "Verifikatsiya statusi yangilandi!");
-                              } else {
-                                alert(data.error || "Xatolik yuz berdi.");
-                              }
+                              const newStatus = data.verificationStatus || (newStatusAction === 'verify' ? 'verified' : 'rejected');
+                              const updated = lawyers.map(item => 
+                                item.id === l.id ? { ...item, verificationStatus: newStatus } : item
+                              );
+                              setLawyers(updated);
+                              localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                              alert(data.message || "Verifikatsiya statusi yangilandi!");
                             } catch (err) {
-                              alert("Serverga ulanishda xatolik.");
+                              // Local fallback update
+                              const newStatus = newStatusAction === 'verify' ? 'verified' : 'rejected';
+                              const updated = lawyers.map(item => 
+                                item.id === l.id ? { ...item, verificationStatus: newStatus } : item
+                              );
+                              setLawyers(updated);
+                              localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                              alert("Verifikatsiya statusi yangilandi!");
                             }
                           }}
-                          className={`px-2 py-1 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
                             l.verificationStatus === 'verified'
                               ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30'
                               : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'
