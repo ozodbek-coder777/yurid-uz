@@ -50,7 +50,8 @@ import {
   saveApplicationToFirebase, 
   onSnapshotApplications,
   saveFeatureSettingsToFirebase,
-  onSnapshotFeatureSettings
+  onSnapshotFeatureSettings,
+  updateLawyerSubscriptionInFirebase
 } from '../utils/firebaseHelper';
 import PersonalStats from './PersonalStats';
 import NewsManagement from './NewsManagement';
@@ -1950,14 +1951,28 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
                             const action = newTier === 'premium' ? 'activate' : 'deactivate';
                             
                             try {
-                              const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/subscription`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ action, days: 30 })
-                              });
-                              const data = await res.json();
+                              let data: any = {};
+                              try {
+                                const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/subscription`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ action, days: 30 })
+                                });
+                                const text = await res.text();
+                                data = text ? JSON.parse(text) : {};
+                              } catch (fErr) {
+                                console.warn("Fetch error, updating locally and in Firebase:", fErr);
+                              }
 
                               const updatedExpiresAt = data.subscriptionExpiresAt || (newTier === 'premium' ? new Date(Date.now() + 30*86400000).toISOString() : null);
+
+                              // Update in Firebase
+                              await updateLawyerSubscriptionInFirebase(
+                                l.id,
+                                newTier,
+                                updatedExpiresAt,
+                                newTier === 'premium' ? null : 10
+                              ).catch(() => {});
 
                               const updated = lawyers.map(item => 
                                 item.id === l.id ? { 
