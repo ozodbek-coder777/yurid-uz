@@ -414,248 +414,290 @@ export default function SubscriptionManagement({
       )}
 
       {/* Subscription Status Header Banner */}
-      <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Joriy Obuna Statusi</span>
-              {isPremium && !isExpired ? (
-                <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5" /> PREMIUM (FAOL)
+      {isAdmin ? (
+        <div className="bg-gradient-to-r from-[#0F172A] via-[#1E1B4B] to-[#0F172A] border-2 border-amber-500/40 rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] rounded-md font-mono uppercase font-black">
+                  SUPER ADMIN PANEL
                 </span>
-              ) : (
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                  BEPUL (FREE)
-                </span>
-              )}
-            </div>
-
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              {isPremium && !isExpired ? (
-                <>Advokat Premium Imkoniyatlari Faol</>
-              ) : (
-                <>Standart Bepul Tarif (10 ta ish limiti)</>
-              )}
-            </h2>
-
-            <p className="text-sm text-slate-400 max-w-xl">
-              {isPremium && !isExpired ? (
-                <>Sizda faol ishlar cheklovi yo'q, profilingiz mijozlar qidiruvida eng yuqorida ko'rinadi va tasdiqlangan Premium nishoniga egasiz.</>
-              ) : (
-                <>Siz bir vaqtning o'zida maksimal <strong>10 ta faol ish</strong> olib borishingiz mumkin. Cheksiz arizalar va ustuvor qidiruv uchun Premium obuna talab qilinadi.</>
-              )}
-            </p>
-          </div>
-
-          <div className="bg-[#1A2234] border border-[#2B354D] rounded-xl p-4 min-w-[240px] flex flex-col justify-between shadow-inner">
-            {isPremium && !isExpired ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Tugash sanasi:</span>
-                  <span className="font-semibold text-white">
-                    {expiresAt?.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' })}
+                {pendingRequestsCount > 0 && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950 flex items-center gap-1.5 shadow-lg animate-pulse">
+                    <Clock className="w-3.5 h-3.5" /> {pendingRequestsCount} ta yangi to'lov so'rovi bor!
                   </span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Qolgan vaqt:</span>
-                  <span className="font-extrabold text-emerald-400 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> {remainingDays} kun
-                  </span>
-                </div>
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                  <div 
-                    className="bg-emerald-500 h-full transition-all duration-500"
-                    style={{ width: `${Math.min(100, Math.max(0, (remainingDays / 30) * 100))}%` }}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Faol ishlar limiti:</span>
-                  <span className="font-bold text-amber-400">
-                    {activeCasesCount} / 10 ta
-                  </span>
-                </div>
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      activeCasesCount >= 10 ? 'bg-rose-500' : 'bg-amber-500'
-                    }`}
-                    style={{ width: `${Math.min(100, (activeCasesCount / 10) * 100)}%` }}
-                  />
-                </div>
-                {activeCasesCount >= 10 && (
-                  <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" /> Limitga yetdingiz! Premium obuna talab qilinadi.
-                  </p>
                 )}
               </div>
-            )}
+
+              <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                <ShieldCheck className="w-7 h-7 text-amber-400" />
+                Obuna va To'lovlarni Boshqarish
+              </h2>
+
+              <p className="text-sm text-slate-300 max-w-xl">
+                Advokatlar yuborgan to'lov cheklarini tekshiring hamda kvitansiyalarga asosan Premium obunani faollashtiring yoki bekor qiling.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <a
+                href="https://t.me/ozod_legend"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                <Send className="w-4 h-4" /> Telegram: @ozod_legend
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Joriy Obuna Statusi</span>
+                {isPremium && !isExpired ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-sm">
+                    <Sparkles className="w-3.5 h-3.5" /> PREMIUM (FAOL)
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                    BEPUL (FREE)
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                {isPremium && !isExpired ? (
+                  <>Advokat Premium Imkoniyatlari Faol</>
+                ) : (
+                  <>Standart Bepul Tarif (10 ta ish limiti)</>
+                )}
+              </h2>
+
+              <p className="text-sm text-slate-400 max-w-xl">
+                {isPremium && !isExpired ? (
+                  <>Sizda faol ishlar cheklovi yo'q, profilingiz mijozlar qidiruvida eng yuqorida ko'rinadi va tasdiqlangan Premium nishoniga egasiz.</>
+                ) : (
+                  <>Siz bir vaqtning o'zida maksimal <strong>10 ta faol ish</strong> olib borishingiz mumkin. Cheksiz arizalar va ustuvor qidiruv uchun Premium obuna talab qilinadi.</>
+                )}
+              </p>
+            </div>
+
+            <div className="bg-[#1A2234] border border-[#2B354D] rounded-xl p-4 min-w-[240px] flex flex-col justify-between shadow-inner">
+              {isPremium && !isExpired ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Tugash sanasi:</span>
+                    <span className="font-semibold text-white">
+                      {expiresAt?.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Qolgan vaqt:</span>
+                    <span className="font-extrabold text-emerald-400 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" /> {remainingDays} kun
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
+                    <div 
+                      className="bg-emerald-500 h-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(0, (remainingDays / 30) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Faol ishlar limiti:</span>
+                    <span className="font-bold text-amber-400">
+                      {activeCasesCount} / 10 ta
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 ${
+                        activeCasesCount >= 10 ? 'bg-rose-500' : 'bg-amber-500'
+                      }`}
+                      style={{ width: `${Math.min(100, (activeCasesCount / 10) * 100)}%` }}
+                    />
+                  </div>
+                  {activeCasesCount >= 10 && (
+                    <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Limitga yetdingiz! Premium obuna talab qilinadi.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* LAWYER PAYMENT SECTION: Receipt Upload & Telegram Contact */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* LEFT / MAIN: Chek Yuklash Formasi */}
-        <div className="lg:col-span-7 bg-[#111827] border border-[#1F2937] rounded-2xl p-6 space-y-6 shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <UploadCloud className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">To'lov Chekini Yuklash (Manual Tasdiqlash)</h3>
-              <p className="text-xs text-slate-400">Telegram orqali to'langan kvitansiya faylini yuklang, admin tekshirib yoqib beradi.</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmitPaymentRequest} className="space-y-5">
-            {/* Price Plan Summary */}
-            <div className="bg-[#182236] border border-[#2B3954] p-4 rounded-xl flex items-center justify-between">
+      {!isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* LEFT / MAIN: Chek Yuklash Formasi */}
+          <div className="lg:col-span-7 bg-[#111827] border border-[#1F2937] rounded-2xl p-6 space-y-6 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <UploadCloud className="w-5 h-5" />
+              </div>
               <div>
-                <span className="text-xs text-slate-400 block font-semibold">Obuna tarifi:</span>
-                <span className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-400" /> Premium - 1 Oylik (30 kun)
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-xs text-slate-400 block font-semibold">To'lov summasi:</span>
-                <span className="text-lg font-extrabold text-emerald-400">200,000 UZS</span>
+                <h3 className="text-lg font-bold text-white">To'lov Chekini Yuklash (Manual Tasdiqlash)</h3>
+                <p className="text-xs text-slate-400">Telegram orqali to'langan kvitansiya faylini yuklang, admin tekshirib yoqib beradi.</p>
               </div>
             </div>
 
-            {/* Drag & Drop Upload Zone */}
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">To'lov Cheki (Kvitansiya) Rasmi:</label>
-              
-              {!receiptImage ? (
-                <div
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer relative ${
-                    dragActive 
-                      ? 'border-cyan-400 bg-cyan-500/10 scale-[1.01]' 
-                      : 'border-slate-700 bg-[#0B0F19] hover:border-slate-500 hover:bg-[#0D1322]'
-                  }`}
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  
-                  <div className="flex flex-col items-center justify-center space-y-3 pointer-events-none">
-                    <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
-                      <UploadCloud className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Chek rasmini shu yerga tashlang yoki bosing</p>
-                      <p className="text-xs text-slate-400 mt-1">PNG, JPG, JPEG fayllar (Maksimal 10MB)</p>
-                    </div>
-                  </div>
+            <form onSubmit={handleSubmitPaymentRequest} className="space-y-5">
+              {/* Price Plan Summary */}
+              <div className="bg-[#182236] border border-[#2B3954] p-4 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 block font-semibold">Obuna tarifi:</span>
+                  <span className="text-sm font-bold text-white flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" /> Premium - 1 Oylik (30 kun)
+                  </span>
                 </div>
-              ) : (
-                <div className="relative border border-slate-700 rounded-2xl p-3 bg-[#0B0F19] flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <img 
-                      src={receiptImage} 
-                      alt="To'lov cheki" 
-                      className="w-16 h-16 object-cover rounded-xl border border-slate-700 shrink-0" 
+                <div className="text-right">
+                  <span className="text-xs text-slate-400 block font-semibold">To'lov summasi:</span>
+                  <span className="text-lg font-extrabold text-emerald-400">200,000 UZS</span>
+                </div>
+              </div>
+
+              {/* Drag & Drop Upload Zone */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-300">To'lov Cheki (Kvitansiya) Rasmi:</label>
+                
+                {!receiptImage ? (
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer relative ${
+                      dragActive 
+                        ? 'border-cyan-400 bg-cyan-500/10 scale-[1.01]' 
+                        : 'border-slate-700 bg-[#0B0F19] hover:border-slate-500 hover:bg-[#0D1322]'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-white truncate">Chek rasmi tayyor</p>
-                      <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
-                        <Check className="w-3 h-3" /> Yuklashga tayyor
-                      </p>
+                    
+                    <div className="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-400">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">Chek rasmini shu yerga tashlang yoki bosing</p>
+                        <p className="text-xs text-slate-400 mt-1">PNG, JPG, JPEG fayllar (Maksimal 10MB)</p>
+                      </div>
                     </div>
                   </div>
+                ) : (
+                  <div className="relative border border-slate-700 rounded-2xl p-3 bg-[#0B0F19] flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <img 
+                        src={receiptImage} 
+                        alt="To'lov cheki" 
+                        className="w-16 h-16 object-cover rounded-xl border border-slate-700 shrink-0" 
+                      />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white truncate">Chek rasmi tayyor</p>
+                        <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+                          <Check className="w-3 h-3" /> Yuklashga tayyor
+                        </p>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedReceiptUrl(receiptImage)}
-                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all cursor-pointer"
-                      title="Kattalashtirib ko'rish"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setReceiptImage(null)}
-                      className="p-2 bg-rose-900/40 hover:bg-rose-800 text-rose-300 rounded-xl text-xs transition-all cursor-pointer"
-                      title="O'chirish"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedReceiptUrl(receiptImage)}
+                        className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all cursor-pointer"
+                        title="Kattalashtirib ko'rish"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReceiptImage(null)}
+                        className="p-2 bg-rose-900/40 hover:bg-rose-800 text-rose-300 rounded-xl text-xs transition-all cursor-pointer"
+                        title="O'chirish"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isSubmittingRequest || !receiptImage}
-              className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
-            >
-              {isSubmittingRequest ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Yuborilmoqda...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" /> To'lov Chekini Tasdiqlash Uchun Yuborish
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* RIGHT: Telegram Direct Contact & Instructions */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-gradient-to-br from-[#111827] to-[#1A2338] border border-[#283654] rounded-2xl p-6 space-y-5 shadow-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
-              <Send className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Telegram orqali To'lov</span>
-            </div>
-
-            <h3 className="text-lg font-bold text-white">To'lov va savollar bo'yicha Telegram</h3>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              To'lovni amalga oshirish yoki rekvizitlarni olish uchun Telegram orqali <strong className="text-cyan-300 font-mono text-sm">@ozod_legend</strong> ga yozing. Chekni yuklaganingizdan so'ng, admin orqali xabar qoldirishingiz ham mumkin.
-            </p>
-
-            <div className="bg-[#0D121F] border border-[#232F48] p-4 rounded-xl space-y-2 text-xs text-slate-300">
-              <div className="font-bold text-cyan-400 flex items-center gap-1.5">
-                <HelpCircle className="w-4 h-4" /> Bajarilishi kerak bo'lgan amallar:
+                )}
               </div>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-300 pl-1">
-                <li>Telegram'da <strong>@ozod_legend</strong> profiliga o'ting.</li>
-                <li>To'lov rekvizitlarini olib to'lovni bajaring.</li>
-                <li>Chek rasmini ushbu sahifaga yuklang yoki TG ga yuboring.</li>
-                <li>Super Admin chekni ko'rib chiqib Premium obunani yoqib beradi.</li>
-              </ol>
-            </div>
 
-            <a
-              href="https://t.me/ozod_legend"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3.5 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <Send className="w-4 h-4" /> Telegram'da @ozod_legend ga Yozish
-            </a>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmittingRequest || !receiptImage}
+                className="w-full py-3.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-98"
+              >
+                {isSubmittingRequest ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Yuborilmoqda...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> To'lov Chekini Tasdiqlash Uchun Yuborish
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* RIGHT: Telegram Direct Contact & Instructions */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-gradient-to-br from-[#111827] to-[#1A2338] border border-[#283654] rounded-2xl p-6 space-y-5 shadow-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-bold">
+                <Send className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Telegram orqali To'lov</span>
+              </div>
+
+              <h3 className="text-lg font-bold text-white">To'lov va savollar bo'yicha Telegram</h3>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                To'lovni amalga oshirish yoki rekvizitlarni olish uchun Telegram orqali <strong className="text-cyan-300 font-mono text-sm">@ozod_legend</strong> ga yozing. Chekni yuklaganingizdan so'ng, admin orqali xabar qoldirishingiz ham mumkin.
+              </p>
+
+              <div className="bg-[#0D121F] border border-[#232F48] p-4 rounded-xl space-y-2 text-xs text-slate-300">
+                <div className="font-bold text-cyan-400 flex items-center gap-1.5">
+                  <HelpCircle className="w-4 h-4" /> Bajarilishi kerak bo'lgan amallar:
+                </div>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 pl-1">
+                  <li>Telegram'da <strong>@ozod_legend</strong> profiliga o'ting.</li>
+                  <li>To'lov rekvizitlarini olib to'lovni bajaring.</li>
+                  <li>Chek rasmini ushbu sahifaga yuklang yoki TG ga yuboring.</li>
+                  <li>Super Admin chekni ko'rib chiqib Premium obunani yoqib beradi.</li>
+                </ol>
+              </div>
+
+              <a
+                href="https://t.me/ozod_legend"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3.5 px-6 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <Send className="w-4 h-4" /> Telegram'da @ozod_legend ga Yozish
+              </a>
+            </div>
           </div>
         </div>
-
-      </div>
+      )}
 
       {/* USER PAYMENT REQUEST HISTORY / STATUS TABLE */}
       <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 space-y-4 shadow-xl">
@@ -842,83 +884,85 @@ export default function SubscriptionManagement({
         </div>
       )}
 
-      {/* PLAN COMPARISON */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* FREE PLAN */}
-        <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 flex flex-col justify-between space-y-6">
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-bold text-white">BEPUL (FREE)</h3>
-                <p className="text-xs text-slate-400 mt-1">Dastlabki sinov va standart foydalanish</p>
+      {/* PLAN COMPARISON (LAWYERS ONLY) */}
+      {!isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* FREE PLAN */}
+          <div className="bg-[#111827] border border-[#1F2937] rounded-2xl p-6 flex flex-col justify-between space-y-6">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-white">BEPUL (FREE)</h3>
+                  <p className="text-xs text-slate-400 mt-1">Dastlabki sinov va standart foydalanish</p>
+                </div>
+                <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded-lg border border-slate-700">
+                  0 UZS / oy
+                </span>
               </div>
-              <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-bold rounded-lg border border-slate-700">
-                0 UZS / oy
-              </span>
+
+              <ul className="space-y-3 text-xs text-slate-300">
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Maksimum <strong>10 ta faol ish</strong> bir vaqtning o'zida</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Asosiy case desk va mijozlar arizalarini qabul qilish</span>
+                </li>
+                <li className="flex items-center gap-2.5 opacity-40 line-through">
+                  <span className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-[10px]">✕</span>
+                  <span>Cheksiz arizalar qabul qilish</span>
+                </li>
+                <li className="flex items-center gap-2.5 opacity-40 line-through">
+                  <span className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-[10px]">✕</span>
+                  <span>Top darajali qidiruv ko'rinishi</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* PREMIUM PLAN */}
+          <div className="bg-gradient-to-b from-[#111827] to-[#172339] border-2 border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between space-y-6 relative shadow-xl">
+            <div className="absolute -top-3 right-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full shadow-lg tracking-wider">
+              TAVSIYA ETILADI
             </div>
 
-            <ul className="space-y-3 text-xs text-slate-300">
-              <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Maksimum <strong>10 ta faol ish</strong> bir vaqtning o'zida</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Asosiy case desk va mijozlar arizalarini qabul qilish</span>
-              </li>
-              <li className="flex items-center gap-2.5 opacity-40 line-through">
-                <span className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-[10px]">✕</span>
-                <span>Cheksiz arizalar qabul qilish</span>
-              </li>
-              <li className="flex items-center gap-2.5 opacity-40 line-through">
-                <span className="w-4 h-4 rounded-full border border-slate-600 flex items-center justify-center text-[10px]">✕</span>
-                <span>Top darajali qidiruv ko'rinishi</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* PREMIUM PLAN */}
-        <div className="bg-gradient-to-b from-[#111827] to-[#172339] border-2 border-emerald-500/50 rounded-2xl p-6 flex flex-col justify-between space-y-6 relative shadow-xl">
-          <div className="absolute -top-3 right-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full shadow-lg tracking-wider">
-            TAVSIYA ETILADI
-          </div>
-
-          <div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
-                  PREMIUM <Sparkles className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-                </h3>
-                <p className="text-xs text-emerald-400 font-medium mt-1">Aktiv advokatlar va firmaning to'liq o'sishi uchun</p>
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                    PREMIUM <Sparkles className="w-5 h-5 text-amber-400 fill-amber-400/20" />
+                  </h3>
+                  <p className="text-xs text-emerald-400 font-medium mt-1">Aktiv advokatlar va firmaning to'liq o'sishi uchun</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-2xl font-black text-white">200,000</span>
+                  <span className="text-xs text-slate-400 block font-semibold">UZS / oyiga</span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-2xl font-black text-white">200,000</span>
-                <span className="text-xs text-slate-400 block font-semibold">UZS / oyiga</span>
-              </div>
+
+              <ul className="space-y-3 text-xs text-slate-200">
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong className="text-emerald-300">Cheksiz faol ishlar</strong> (10 ta cheklovi olib tashlanadi)</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong className="text-amber-300">Top-1 daraja:</strong> Advokatlar ro'yxatida eng yuqorida ko'rinadi</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong>PREMIUM & Verified</strong> tasdiqlangan yashil nishon</span>
+                </li>
+                <li className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Kengaytirilgan Shaxsiy Analitika va Daromadlar paneli</span>
+                </li>
+              </ul>
             </div>
-
-            <ul className="space-y-3 text-xs text-slate-200">
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span><strong className="text-emerald-300">Cheksiz faol ishlar</strong> (10 ta cheklovi olib tashlanadi)</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span><strong className="text-amber-300">Top-1 daraja:</strong> Advokatlar ro'yxatida eng yuqorida ko'rinadi</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span><strong>PREMIUM & Verified</strong> tasdiqlangan yashil nishon</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Kengaytirilgan Shaxsiy Analitika va Daromadlar paneli</span>
-              </li>
-            </ul>
           </div>
         </div>
-      </div>
+      )}
 
       {/* RECEIPT PREVIEW MODAL */}
       {selectedReceiptUrl && (
