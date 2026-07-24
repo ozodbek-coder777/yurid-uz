@@ -1,5 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, Search, ShieldAlert, Bell, AlertCircle } from 'lucide-react';
+import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, Search, ShieldAlert, Bell, AlertCircle, BookOpen } from 'lucide-react';
+import { KnowledgeBase } from './components/KnowledgeBase';
+import { SOSModal } from './components/SOSModal';
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
 import { getUnreadCount } from './utils/chatHelper';
@@ -38,7 +40,8 @@ function ComponentLoader() {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'client' | 'lawyer'>('client');
-  const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news' | 'kuzatish'>('chatbot');
+  const [clientSubTab, setClientSubTab] = useState<'chatbot' | 'hire' | 'police' | 'profile' | 'witnesses' | 'news' | 'kuzatish' | 'bilimlar'>('chatbot');
+  const [isSOSOpen, setIsSOSOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'app' | 'privacy' | 'terms' | '404'>('app');
@@ -770,6 +773,17 @@ export default function App() {
                 <Search className="w-4 h-4 text-blue-400" />
                 {lang === 'uz' ? 'Arizani Kuzatish' : 'Отслеживание Заявки'}
               </button>
+              <button
+                onClick={() => setClientSubTab('bilimlar')}
+                className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
+                  clientSubTab === 'bilimlar'
+                    ? 'border-cyan-500 text-cyan-400 font-bold'
+                    : 'border-transparent text-gray-400 hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-4 h-4 text-cyan-400" />
+                {lang === 'uz' ? 'Bilimlar Bazasi (FAQ)' : 'База Знаний'}
+              </button>
             </div>
 
             {/* Sub-tab Content Components */}
@@ -935,6 +949,14 @@ export default function App() {
                 {clientSubTab === 'kuzatish' && (
                   <ApplicationTracking lang={lang} onBack={() => setClientSubTab('chatbot')} />
                 )}
+                {clientSubTab === 'bilimlar' && (
+                  <KnowledgeBase 
+                    lang={lang} 
+                    onConnectLawyer={(cat, title) => {
+                      setClientSubTab('chatbot');
+                    }} 
+                  />
+                )}
               </Suspense>
             )}
           </div>
@@ -1024,6 +1046,32 @@ export default function App() {
         onClose={() => setIsDisputeOpen(false)}
         lang={lang}
         currentUser={null}
+      />
+
+      {/* MODULE 3: Floating Rose SOS Emergency Button */}
+      <button
+        onClick={() => setIsSOSOpen(true)}
+        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500 hover:from-rose-500 hover:to-amber-400 text-white font-black text-xs px-4 py-3.5 rounded-full shadow-2xl shadow-rose-600/50 border-2 border-rose-400/90 flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 transition-all group font-mono uppercase tracking-wider"
+        title="SOS — Tezkor Yordam Ko'rsatmasi"
+      >
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+        </span>
+        <ShieldAlert className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
+        <span>SOS — Voqea Sodir Bo'ldimi?</span>
+      </button>
+
+      {/* SOS Modal */}
+      <SOSModal 
+        isOpen={isSOSOpen} 
+        onClose={() => setIsSOSOpen(false)} 
+        lang={lang}
+        onStartIntake={(incidentType) => {
+          setIsSOSOpen(false);
+          setActiveTab('client');
+          setClientSubTab('chatbot');
+        }}
       />
 
     </div>

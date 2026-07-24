@@ -612,8 +612,10 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
       return matchesSearch && matchesSpec && matchesRating;
     })
     .sort((a, b) => {
-      const aIsPremium = a.subscriptionTier === 'premium' ? 1 : 0;
-      const bIsPremium = b.subscriptionTier === 'premium' ? 1 : 0;
+      const aValid = a.subscriptionTier === 'premium' && (!a.subscriptionExpiresAt || new Date(a.subscriptionExpiresAt).getTime() > Date.now());
+      const bValid = b.subscriptionTier === 'premium' && (!b.subscriptionExpiresAt || new Date(b.subscriptionExpiresAt).getTime() > Date.now());
+      const aIsPremium = aValid ? 1 : 0;
+      const bIsPremium = bValid ? 1 : 0;
       if (bIsPremium !== aIsPremium) {
         return bIsPremium - aIsPremium; // Premium subscribers first
       }
@@ -860,7 +862,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <h3 className="font-sans font-bold text-white group-hover:text-teal-400 transition-colors text-base">{lawyer.name}</h3>
-                    {lawyer.subscriptionTier === 'premium' && (
+                    {lawyer.subscriptionTier === 'premium' && (!lawyer.subscriptionExpiresAt || new Date(lawyer.subscriptionExpiresAt).getTime() > Date.now()) && (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-xs">
                         <Sparkles className="w-2.5 h-2.5 text-amber-400" /> PREMIUM
                       </span>

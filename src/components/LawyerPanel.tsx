@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import SubscriptionManagement from './SubscriptionManagement';
+import { AdminArticlesManager } from './AdminArticlesManager';
+import { AdminGuidesManager } from './AdminGuidesManager';
 import { 
+  BookOpen,
+  Siren,
   Search, 
   Filter, 
   AlertTriangle, 
@@ -445,8 +449,9 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     return null;
   });
 
-  // Panel active tabs: 'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription'
-  const [activePanelTab, setActivePanelTab] = useState<'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription'>('submissions');
+  // Panel active tabs: 'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription' | 'users_management' | 'articles' | 'emergency_guides'
+  const [activePanelTab, setActivePanelTab] = useState<'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription' | 'users_management' | 'articles' | 'emergency_guides'>('submissions');
+  const [summaryMode, setSummaryMode] = useState<'simplified' | 'technical'>('simplified');
 
   const [features, setFeatures] = useState<any>({
     lawyerHiring: true,
@@ -1429,6 +1434,30 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           <Award className="w-4 h-4 text-teal-400 animate-pulse" />
           <span>{lang === 'ru' ? 'Независимые свидетели' : 'Holis guvohlar'}</span>
         </button>
+        <button
+          onClick={() => setActivePanelTab('articles')}
+          className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activePanelTab === 'articles'
+              ? 'border-cyan-500 text-cyan-400 font-bold bg-cyan-500/10'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          <BookOpen className="w-4 h-4 text-cyan-400" />
+          <span>{lang === 'ru' ? 'База знаний (FAQ)' : 'Bilimlar Bazasi (FAQ)'}</span>
+        </button>
+
+        <button
+          onClick={() => setActivePanelTab('emergency_guides')}
+          className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activePanelTab === 'emergency_guides'
+              ? 'border-rose-500 text-rose-400 font-bold bg-rose-500/10'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          <Siren className="w-4 h-4 text-rose-400" />
+          <span>{lang === 'ru' ? 'SOS Инструкции' : 'SOS Ko\'rsatmalari'}</span>
+        </button>
+
         <button
           onClick={() => setActivePanelTab('subscription')}
           className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
@@ -2724,6 +2753,16 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
         />
       )}
 
+      {/* Articles Management Tab */}
+      {activePanelTab === 'articles' && (
+        <AdminArticlesManager lang={lang} />
+      )}
+
+      {/* Emergency Guides Management Tab */}
+      {activePanelTab === 'emergency_guides' && (
+        <AdminGuidesManager lang={lang} />
+      )}
+
       {/* 4. ARIZA TAFSILOTI: Beautiful Modal View overlay */}
       {isModalOpen && selectedSub && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10" id="lawyer-detail-modal" role="dialog" aria-modal="true">
@@ -2812,13 +2851,44 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
               {/* Section: Main Markdown Summary */}
               <div className="space-y-2">
-                <h4 className="font-sans font-bold text-white text-sm flex items-center gap-1.5 border-b border-[#1F2937] pb-2">
-                  <FileText className="w-4.5 h-4.5 text-blue-400" />
-                  <span>{t.modal_summary_title}</span>
-                </h4>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#1F2937] pb-2">
+                  <h4 className="font-sans font-bold text-white text-sm flex items-center gap-1.5">
+                    <FileText className="w-4.5 h-4.5 text-blue-400" />
+                    <span>{t.modal_summary_title}</span>
+                  </h4>
+
+                  {/* Summary Mode Switcher */}
+                  <div className="flex items-center bg-[#161B22] p-1 rounded-xl border border-[#30363D]">
+                    <button
+                      type="button"
+                      onClick={() => setSummaryMode('simplified')}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        summaryMode === 'simplified' 
+                          ? 'bg-cyan-500 text-gray-950 shadow-sm' 
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Oddiy Tilda (Mijoz)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSummaryMode('technical')}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        summaryMode === 'technical' 
+                          ? 'bg-blue-600 text-white shadow-sm' 
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      Yuridik Atamali (Advokat)
+                    </button>
+                  </div>
+                </div>
+
                 <div className="bg-[#161B22] border border-[#1F2937] rounded-2xl p-5 text-xs text-gray-300 leading-relaxed max-h-72 overflow-y-auto space-y-3 font-sans">
                   <div className="whitespace-pre-line prose prose-invert max-w-none text-gray-300">
-                    {selectedSub.summary}
+                    {summaryMode === 'simplified' 
+                      ? (selectedSub.simplifiedSummary || selectedSub.summary) 
+                      : (selectedSub.technicalSummary || selectedSub.summary)}
                   </div>
                 </div>
               </div>

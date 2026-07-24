@@ -77,17 +77,28 @@ const writeSubmissions = (data: any[]) => {
 };
 
 // Configuration from environment variables, fallback to user's provided config
-const hasFirebaseConfig = !!process.env.FIREBASE_API_KEY;
+let appletConfig: any = {};
+try {
+  const configFile = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configFile)) {
+    appletConfig = JSON.parse(fs.readFileSync(configFile, "utf8"));
+  }
+} catch (e) {
+  console.error("Error loading firebase-applet-config.json:", e);
+}
 
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "AIzaSyCL72VpU39kA5fnosYDfiDOWiaFKrHvnPE",
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "adolat-hamkor.firebaseapp.com",
-  databaseURL: process.env.FIREBASE_DATABASE_URL || "https://adolat-hamkor-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: process.env.FIREBASE_PROJECT_ID || "adolat-hamkor",
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "adolat-hamkor.firebasestorage.app",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "14922165170",
-  appId: process.env.FIREBASE_APP_ID || "1:14922165170:web:2d3a90f7a4be42f5bb12ab"
+  apiKey: process.env.FIREBASE_API_KEY || appletConfig.apiKey || "AIzaSyBi6mPJpc1WiYQiK7b7qGCM8pFKv3cbxNc",
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN || appletConfig.authDomain || "celestial-chassis-7nzsc.firebaseapp.com",
+  databaseURL: process.env.FIREBASE_DATABASE_URL || appletConfig.databaseURL || "https://celestial-chassis-7nzsc.firebaseio.com",
+  projectId: process.env.FIREBASE_PROJECT_ID || appletConfig.projectId || "celestial-chassis-7nzsc",
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || appletConfig.storageBucket || "celestial-chassis-7nzsc.firebasestorage.app",
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || appletConfig.messagingSenderId || "469684088171",
+  appId: process.env.FIREBASE_APP_ID || appletConfig.appId || "1:469684088171:web:b28e92192316303001b02e",
+  firestoreDatabaseId: process.env.FIREBASE_FIRESTORE_DATABASE_ID || appletConfig.firestoreDatabaseId || "ai-studio-lawyerclientinta-568825d7-2356-4a1f-91ef-93d94cb99e92"
 };
+
+const hasFirebaseConfig = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 let firebaseApp: any = null;
 let firestoreDb: any = null;
@@ -178,7 +189,9 @@ const initFirebase = () => {
     firebaseApp = initializeApp(firebaseConfig);
     if (isFirestoreSupported) {
       try {
-        firestoreDb = getFirestore(firebaseApp);
+        firestoreDb = firebaseConfig.firestoreDatabaseId 
+          ? getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId)
+          : getFirestore(firebaseApp);
       } catch (e) {
         console.error("[Firebase] Firestore initialization failed:", e);
         isFirestoreSupported = false;
@@ -209,8 +222,7 @@ const saveSubmissionToFirebase = async (submission: any) => {
   if (isFirestoreSupported && firestoreDb) {
     try {
       console.log(`[Firebase] Saving submission ${docId} to Firestore...`);
-      const docRef = doc(firestoreDb, "submissions", docId);
-      await withTimeout(setDoc(docRef, {
+      const payload = {
         id: docId,
         fullName: submission.fullName || "",
         phone: submission.phone || "",
@@ -225,7 +237,13 @@ const saveSubmissionToFirebase = async (submission: any) => {
         fault: submission.fault || "Aniqmas",
         notes: submission.notes || "",
         assignedLawyer: submission.assignedLawyer || ""
-      }));
+      };
+      // Save to main 'applications' collection
+      const appRef = doc(firestoreDb, "applications", docId);
+      await withTimeout(setDoc(appRef, payload, { merge: true }));
+      // Save to 'submissions' collection for legacy compatibility
+      const subRef = doc(firestoreDb, "submissions", docId);
+      await setDoc(subRef, payload, { merge: true }).catch(() => {});
       console.log(`[Firebase] Saved to Firestore: ${docId}`);
     } catch (err: any) {
       await handleFirestoreError(err, "saving to Firestore");
@@ -271,8 +289,10 @@ const updateSubmissionStatusInFirebase = async (id: string, status: string) => {
   
   if (isFirestoreSupported && firestoreDb) {
     try {
-      const docRef = doc(firestoreDb, "submissions", id);
-      await withTimeout(updateDoc(docRef, { status }));
+      const docRef1 = doc(firestoreDb, "applications", id);
+      await withTimeout(updateDoc(docRef1, { status })).catch(() => {});
+      const docRef2 = doc(firestoreDb, "submissions", id);
+      await updateDoc(docRef2, { status }).catch(() => {});
       console.log(`[Firebase] Updated status to ${status} in Firestore for ${id}`);
     } catch (err: any) {
       await handleFirestoreError(err, `updating status in Firestore for ${id}`);
@@ -301,8 +321,10 @@ const updateSubmissionNotesInFirebase = async (id: string, notes: string) => {
   
   if (isFirestoreSupported && firestoreDb) {
     try {
-      const docRef = doc(firestoreDb, "submissions", id);
-      await withTimeout(updateDoc(docRef, { notes }));
+      const docRef1 = doc(firestoreDb, "applications", id);
+      await withTimeout(updateDoc(docRef1, { notes })).catch(() => {});
+      const docRef2 = doc(firestoreDb, "submissions", id);
+      await updateDoc(docRef2, { notes }).catch(() => {});
       console.log(`[Firebase] Updated notes in Firestore for ${id}`);
     } catch (err: any) {
       await handleFirestoreError(err, `updating notes in Firestore for ${id}`);
@@ -331,8 +353,10 @@ const updateSubmissionAssignInFirebase = async (id: string, assignedLawyer: stri
   
   if (isFirestoreSupported && firestoreDb) {
     try {
-      const docRef = doc(firestoreDb, "submissions", id);
-      await withTimeout(updateDoc(docRef, { assignedLawyer }));
+      const docRef1 = doc(firestoreDb, "applications", id);
+      await withTimeout(updateDoc(docRef1, { assignedLawyer })).catch(() => {});
+      const docRef2 = doc(firestoreDb, "submissions", id);
+      await updateDoc(docRef2, { assignedLawyer }).catch(() => {});
       console.log(`[Firebase] Updated assignedLawyer to ${assignedLawyer} in Firestore for ${id}`);
     } catch (err: any) {
       await handleFirestoreError(err, `updating assignedLawyer in Firestore for ${id}`);
@@ -356,8 +380,10 @@ const deleteSubmissionFromFirebase = async (id: string) => {
   
   if (isFirestoreSupported && firestoreDb) {
     try {
-      const docRef = doc(firestoreDb, "submissions", id);
-      await withTimeout(deleteDoc(docRef));
+      const docRef1 = doc(firestoreDb, "applications", id);
+      await withTimeout(deleteDoc(docRef1)).catch(() => {});
+      const docRef2 = doc(firestoreDb, "submissions", id);
+      await deleteDoc(docRef2).catch(() => {});
       console.log(`[Firebase] Deleted from Firestore: ${id}`);
     } catch (err: any) {
       await handleFirestoreError(err, `deleting from Firestore for ${id}`);
@@ -390,9 +416,9 @@ const fetchSubmissionsFromFirebase = async (): Promise<any[]> => {
   // 1. Try Firestore
   if (isFirestoreSupported && firestoreDb) {
     try {
-      console.log("[Firebase] Fetching submissions from Firestore...");
-      const submissionsCol = collection(firestoreDb, "submissions");
-      const snapshot = await withTimeout(getDocs(submissionsCol));
+      console.log("[Firebase] Fetching submissions from Firestore 'applications' collection...");
+      const appsCol = collection(firestoreDb, "applications");
+      const snapshot = await withTimeout(getDocs(appsCol));
       const list: any[] = [];
       snapshot.forEach(doc => {
         const data = doc.data();
@@ -401,6 +427,21 @@ const fetchSubmissionsFromFirebase = async (): Promise<any[]> => {
           id: doc.id
         });
       });
+
+      // If 'applications' is empty, check 'submissions'
+      if (list.length === 0) {
+        console.log("[Firebase] 'applications' collection empty, checking 'submissions'...");
+        const subsCol = collection(firestoreDb, "submissions");
+        const subSnapshot = await withTimeout(getDocs(subsCol));
+        subSnapshot.forEach(doc => {
+          const data = doc.data();
+          list.push({
+            ...data,
+            id: doc.id
+          });
+        });
+      }
+
       if (list.length > 0) {
         console.log(`[Firebase] Successfully fetched ${list.length} submissions from Firestore.`);
         list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
@@ -902,7 +943,9 @@ app.patch("/api/submissions/:id/assign", async (req, res) => {
            s.status !== 'YAKUNLANDI' && s.status !== 'RAD_ETILGAN' && s.status !== 'TUGALLANGAN' && s.status !== 'yakunlandi'
     ).length;
 
-    const isFree = !targetLawyer || targetLawyer.subscriptionTier !== 'premium';
+    const expiresAt = targetLawyer?.subscriptionExpiresAt ? new Date(targetLawyer.subscriptionExpiresAt) : null;
+    const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false;
+    const isFree = !targetLawyer || targetLawyer.subscriptionTier !== 'premium' || isExpired;
     if (isFree && activeCasesCount >= 10) {
       return res.status(403).json({
         error: "Bepul (Free) tarifda maksimum 10 ta faol ish olib borish mumkin. Davom etish uchun Premium obunani faollashtiring!",
@@ -2018,7 +2061,9 @@ Har doim javobingizni quyidagi formatdagi JSON ko'rinishida qaytaring:
     "injuries": "jarohatlanganlar, shifoxona tafsilotlari yoki yetkazilgan moddiy/ma'naviy zarar ko'lami",
     "fault": "aybdor tomon kimligi, rasmiy hujjatlar yoki bayonnoma holati",
     "urgency": "YUKSAK" yoki "O'RTA" yoki "PAST" (og'ir zararlar yoki muhim muddatlar bo'lsa YUKSAK, oddiy moddiy zarar yoki konsultatsiya bo'lsa PAST yoki O'RTA),
-    "summary": "Mijozning to'liq holati yuzasidan o'zbek tilida Markdown formatidagi professional va batafsil xulosa (Summary). Unda albatta 'Buzilgan qonun bandlari' bo'limi bo'lishi va amaldagi aniq moddalarni (masalan, Jinoyat kodeksi 266-moddasi, Fuqarolik kodeksi 204-moddasi va h.k.) o'z ichiga olishi kerak."
+    "simplifiedSummary": "Mijoz uchun oddiy tildagi xulosa. MUHIM TALAB: Xulosani yuridik atamalarsiz, oddiy fuqaro tushunadigan tilda yoz. Har bir band oxirida, agar murakkab atama ishlatilsa, qavs ichida qisqa izoh ber. Masalan: 'da'vo muddati (bu — sudga murojaat qilish uchun belgilangan vaqt chegarasi)'.",
+    "technicalSummary": "Advokat uchun rasmiy va batafsil yuridik xulosa. Unda albatta 'Buzilgan qonun bandlari' bo'limi bo'lishi va amaldagi aniq moddalarni (masalan, Jinoyat kodeksi 266-moddasi, Fuqarolik kodeksi 204-moddasi va h.k.) o'z ichiga olishi kerak.",
+    "summary": "Qisqa umumiy xulosa."
   }
 }`;
 
@@ -2051,7 +2096,9 @@ Har doim javobingizni quyidagi formatdagi JSON ko'rinishida qaytaring:
                 injuries: { type: Type.STRING },
                 fault: { type: Type.STRING },
                 urgency: { type: Type.STRING, enum: ["YUKSAK", "O'RTA", "PAST"] },
-                summary: { type: Type.STRING, description: "Comprehensive markdown summary of the case. VERY IMPORTANT: Leave as empty string \"\" if isCompleted is false. Only generate a full detailed summary when isCompleted is true." }
+                simplifiedSummary: { type: Type.STRING, description: "Simplified non-jargon Uzbek summary for the client with explanations in parentheses" },
+                technicalSummary: { type: Type.STRING, description: "Formal legal summary with article references for the lawyer" },
+                summary: { type: Type.STRING, description: "Comprehensive markdown summary of the case. VERY IMPORTANT: Leave as empty string \"\" if isCompleted is false. Only generate when isCompleted is true." }
               }
             }
           },

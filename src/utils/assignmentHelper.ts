@@ -87,25 +87,23 @@ export function autoAssignLawyer(description: string, category?: string): { lawy
 
   // 3. Determine the category
   const catToMatch = category || determineCategory(description);
-  if (!catToMatch) {
-    return null;
-  }
 
   // 4. Try to match candidate specialties (case-insensitive substring match)
-  const catParts = catToMatch.toLowerCase().split(/[,\s]+/).filter(Boolean);
-  const matchedCandidates = candidates.filter(l => {
-    const spec = (l.specialization || '').toLowerCase();
-    return catParts.some(part => spec.includes(part) || part.includes(spec));
-  });
-
-  // If no candidates matched the specialization, do NOT fallback to other specialties, return null
-  if (matchedCandidates.length === 0) {
-    return null;
+  let pool = candidates;
+  if (catToMatch) {
+    const catParts = catToMatch.toLowerCase().split(/[,\s]+/).filter(Boolean);
+    const matched = candidates.filter(l => {
+      const spec = (l.specialization || '').toLowerCase();
+      return catParts.some(part => spec.includes(part) || part.includes(spec));
+    });
+    if (matched.length > 0) {
+      pool = matched;
+    }
   }
 
   // 5. Select the one with lowest activeCases
-  matchedCandidates.sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
-  const selected = matchedCandidates[0];
+  pool.sort((a, b) => (a.activeCases || 0) - (b.activeCases || 0));
+  const selected = pool[0];
 
   // 6. Increment activeCases for the assigned lawyer
   const updatedLawyers = lawyers.map(l => {

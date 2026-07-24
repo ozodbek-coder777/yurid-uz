@@ -1,4 +1,4 @@
-import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest, AuditLog } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest, AuditLog, Article, EmergencyGuide } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -763,6 +763,103 @@ export function onSnapshotAuditLogs(callback: (logs: AuditLog[]) => void): () =>
     return () => {};
   }
 }
+
+/**
+ * 37. Maqolalarni (Articles) saqlash / yangilash
+ */
+export async function saveArticleToFirebase(article: Article): Promise<boolean> {
+  const path = 'articles';
+  try {
+    const articleRef = doc(db, path, article.id);
+    await setDoc(articleRef, article, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Article saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 38. Maqolalarni Firestore-dan olish
+ */
+export async function getArticlesFromFirebase(): Promise<Article[]> {
+  const path = 'articles';
+  try {
+    const q = query(collection(db, path));
+    const snapshot = await getDocs(q);
+    const articles: Article[] = [];
+    snapshot.forEach((docSnap) => {
+      articles.push(docSnap.data() as Article);
+    });
+    return articles;
+  } catch (error) {
+    console.error("Articles olishda xatolik:", error);
+    return [];
+  }
+}
+
+/**
+ * 39. Maqolani o'chirish
+ */
+export async function deleteArticleFromFirebase(articleId: string): Promise<boolean> {
+  const path = 'articles';
+  try {
+    await deleteDoc(doc(db, path, articleId));
+    return true;
+  } catch (error) {
+    console.error("Article o'chirishda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 40. Maqola korishlar sonini oshirish
+ */
+export async function incrementArticleViewCountInFirebase(articleId: string, currentCount: number): Promise<boolean> {
+  const path = 'articles';
+  try {
+    const articleRef = doc(db, path, articleId);
+    await updateDoc(articleRef, { viewCount: (currentCount || 0) + 1 });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * 41. SOS Ko'rsatmalarni (EmergencyGuides) saqlash / yangilash
+ */
+export async function saveEmergencyGuideToFirebase(guide: EmergencyGuide): Promise<boolean> {
+  const path = 'emergencyGuides';
+  try {
+    const guideRef = doc(db, path, guide.guideType);
+    await setDoc(guideRef, guide, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("EmergencyGuide saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 42. SOS Ko'rsatmalarni Firestore-dan olish
+ */
+export async function getEmergencyGuidesFromFirebase(): Promise<EmergencyGuide[]> {
+  const path = 'emergencyGuides';
+  try {
+    const q = query(collection(db, path));
+    const snapshot = await getDocs(q);
+    const guides: EmergencyGuide[] = [];
+    snapshot.forEach((docSnap) => {
+      guides.push(docSnap.data() as EmergencyGuide);
+    });
+    return guides;
+  } catch (error) {
+    console.error("EmergencyGuides olishda xatolik:", error);
+    return [];
+  }
+}
+
 
 
 

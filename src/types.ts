@@ -22,6 +22,8 @@ export interface Submission {
   incidentDescription: string;
   chatHistory: ChatMessage[];
   summary: string; // Markdown or detailed text
+  simplifiedSummary?: string; // Oddiy tildagi xulosa (mijozga)
+  technicalSummary?: string; // Yuridik atamali xulosa (advokatga)
   urgency: UrgencyLevel;
   status: SubmissionStatus;
   createdAt: string;
@@ -220,3 +222,31 @@ export interface ChatRoom {
   messages: LawyerChatMessage[];
   lastUpdated: string;
 }
+
+export type ArticleCategory = "oila" | "mehnat" | "jinoyat" | "fuqarolik" | "biznes" | "boshqa";
+
+export interface Article {
+  id: string;
+  title: string;
+  category: ArticleCategory;
+  summary: string;
+  content: string; // Markdown formatida
+  authorId: string | null;
+  authorName?: string;
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmergencyGuide {
+  id: string;
+  guideType: 'avtohalokat' | 'tajovuz' | 'ogirlik' | 'firibgarlik' | 'maishiy';
+  title: string;
+  icon?: string;
+  warningText: string;
+  step1: { title: string; items: string[] };
+  step2: { title: string; items: string[] };
+  step3: { title: string; items: string[] };
+  updatedAt?: string;
+}
+

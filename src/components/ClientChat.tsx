@@ -309,6 +309,9 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
 
     try {
       const assignment = autoAssignLawyer(incidentDescription);
+      const assignedLawyerName = assignment ? assignment.lawyerName : (isRu ? "Ожидает назначения" : "Advokat kutilmoqda");
+      const assignedLawyerId = assignment ? assignment.lawyerId : "";
+
       const submissionsList = JSON.parse(localStorage.getItem('submissions_list') || '[]');
       const newSub = {
         id: "sub_" + Date.now(),
@@ -326,8 +329,11 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
         createdAt: new Date().toISOString(),
         injuries: injuriesLabel,
         fault: faultLabel,
-        notes: `Tizim tomonidan avtomatik ravishda tayinlandi: ${assignment.lawyerName}`,
-        assignedLawyer: assignment.lawyerId,
+        notes: assignment 
+          ? (isRu ? `Автоматически назначено: ${assignment.lawyerName}` : `Tizim tomonidan avtomatik ravishda tayinlandi: ${assignment.lawyerName}`)
+          : (isRu ? "Ожидает назначения юриста" : "Advokat tayinlanishi kutilmoqda"),
+        assignedLawyer: assignedLawyerId,
+        assignedLawyerId: assignedLawyerId,
         timeline: [
           {
             status: "YANGI",
