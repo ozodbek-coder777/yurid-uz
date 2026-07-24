@@ -869,7 +869,7 @@ export default function App() {
                 )}
                 {clientSubTab === 'hire' && (
                   features.lawyerHiring ? (
-                    <LawyersHire lang={lang} />
+                    <LawyersHire lang={lang} onNavigateToTracking={() => setClientSubTab('kuzatish')} />
                   ) : (
                     <div className="bg-[#0D1017] border border-[#1F2937] rounded-3xl p-8 text-center space-y-4 max-w-2xl mx-auto my-12 animate-fade-in">
                       <div className="w-16 h-16 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-500 mx-auto">

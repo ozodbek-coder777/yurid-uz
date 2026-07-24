@@ -15,7 +15,8 @@ import {
   AlertCircle,
   ThumbsUp,
   Award,
-  CheckCircle2
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
 import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
@@ -26,9 +27,10 @@ import MultiStepHireForm from './MultiStepHireForm';
 
 interface LawyersHireProps {
   lang: 'uz' | 'ru';
+  onNavigateToTracking?: () => void;
 }
 
-export default function LawyersHire({ lang }: LawyersHireProps) {
+export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireProps) {
   const [currentUser] = useState<any>(() => {
     const saved = localStorage.getItem('logged_in_user');
     if (!saved) return null;
@@ -315,6 +317,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
   // Multi-step form state
   const [showMultiStepForm, setShowMultiStepForm] = useState(false);
   const [submittedAppInfo, setSubmittedAppInfo] = useState<{ appNumber: string; category: string } | null>(null);
+  const [copiedAppNum, setCopiedAppNum] = useState(false);
 
   // Helper formula implementation:
   // Tizim bahosi calculations:
@@ -640,35 +643,79 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
             <h2 className="text-xl sm:text-2xl font-sans font-bold text-white">
               {lang === 'ru' ? "Заявка успешно принята!" : "Arizangiz muvaffaqiyatli qabul qilindi!"}
             </h2>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-xs font-bold rounded-full">
-              <span>ID: #{submittedAppInfo.appNumber}</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-sm font-bold rounded-xl">
+              <span>{lang === 'ru' ? "Номер заявки:" : "Ariza raqami:"} {submittedAppInfo.appNumber}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(submittedAppInfo.appNumber);
+                  setCopiedAppNum(true);
+                  setTimeout(() => setCopiedAppNum(false), 2000);
+                }}
+                className="p-1 hover:text-white transition-colors cursor-pointer"
+                title={lang === 'ru' ? "Скопировать" : "Nusxalash"}
+              >
+                {copiedAppNum ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
+              </button>
             </div>
           </div>
 
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
             {lang === 'ru' 
-              ? `Ваше заявление по теме "${submittedAppInfo.category}" зарегистрировано. Высококвалифицированный адвокат свяжется с вами в ближайшее время.`
-              : `Sizning "${submittedAppInfo.category}" bo'yicha arizangiz muvaffaqiyatli ro'yxatga olindi. Tez orada professional advokatimiz siz bilan bog'lanadi.`}
+              ? `Ваше заявление по теме "${submittedAppInfo.category}" зарегистрировано. Вы можете отслеживать статус вашей заявки в реальном времени.`
+              : `Sizning "${submittedAppInfo.category}" bo'yicha yuborgan arizangiz muvaffaqiyatli ro'yxatga olindi. Arizangiz holati va qaysi advokatga topshirilganini real vaqtda kuzatib borishingiz mumkin.`}
           </p>
 
-          <div className="pt-4 border-t border-[#1F2937]/50 flex flex-col sm:flex-row gap-3">
+          {/* Stage level status widget */}
+          <div className="bg-[#161B22] border border-[#1F2937] rounded-2xl p-4 text-left space-y-2.5 shadow-inner">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-gray-400 font-medium">
+                {lang === 'ru' ? "Текущий уровень/этап:" : "Hozirgi daraja/bosqich:"}
+              </span>
+              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                {lang === 'ru' ? "1-й этап: Новая (Принята)" : "1-daraja: Yangi (Qabul qilindi)"}
+              </span>
+            </div>
+
+            {/* Visual 4-Step Progress Bar */}
+            <div className="grid grid-cols-4 gap-1.5 pt-1">
+              <div className="h-2 rounded-full bg-emerald-500"></div>
+              <div className="h-2 rounded-full bg-[#1F2937]"></div>
+              <div className="h-2 rounded-full bg-[#1F2937]"></div>
+              <div className="h-2 rounded-full bg-[#1F2937]"></div>
+            </div>
+            <div className="grid grid-cols-4 text-[10px] text-gray-500 text-center font-mono">
+              <span className="text-emerald-400 font-bold">{lang === 'ru' ? "1. Новая" : "1. Yangi"}</span>
+              <span>{lang === 'ru' ? "2. Анализ" : "2. Tahlil"}</span>
+              <span>{lang === 'ru' ? "3. Адвокат" : "3. Advokat"}</span>
+              <span>{lang === 'ru' ? "4. Итог" : "4. Yakun"}</span>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-[#1F2937]/50 flex flex-col sm:flex-row gap-3">
+            {onNavigateToTracking && (
+              <button
+                onClick={() => {
+                  setSubmittedAppInfo(null);
+                  setShowMultiStepForm(false);
+                  onNavigateToTracking();
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-500 hover:to-teal-400 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-500/20"
+              >
+                <Search className="w-4 h-4" />
+                <span>{lang === 'ru' ? "Отследить заявку" : "Arizani kuzatish"}</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 setSubmittedAppInfo(null);
                 setShowMultiStepForm(false);
               }}
-              className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-            >
-              {lang === 'ru' ? "Вернуться к списку" : "Ro'yxatga qaytish"}
-            </button>
-            <button
-              onClick={() => {
-                setSubmittedAppInfo(null);
-                setShowMultiStepForm(true);
-              }}
               className="flex-1 py-3 bg-[#161B22] hover:bg-slate-800 border border-[#1F2937] text-gray-300 font-bold rounded-xl text-xs transition-colors cursor-pointer"
             >
-              {lang === 'ru' ? "Новая заявка" : "Yangi ariza yuborish"}
+              {lang === 'ru' ? "Закрыть" : "Yopish"}
             </button>
           </div>
         </div>
