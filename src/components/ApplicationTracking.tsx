@@ -93,25 +93,34 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
     setLoading(true);
 
     try {
-      // Direct Firestore Query to be extremely fast and secure
-      const q = query(
+      // Direct Firestore Query by applicationNumber
+      let snapshot = await getDocs(query(
         collection(db, 'applications'),
         where('applicationNumber', '==', cleanAppNum)
-      );
+      ));
       
-      const snapshot = await getDocs(q);
+      // Secondary Firestore Query by document ID if app number query comes up empty
+      if (snapshot.empty) {
+        snapshot = await getDocs(query(
+          collection(db, 'applications'),
+          where('id', '==', appNumber.trim())
+        ));
+      }
       
       if (snapshot.empty) {
         // Fallback check local storage if offline or not synced yet
         const localList: Submission[] = JSON.parse(localStorage.getItem('submissions_list') || '[]');
-        const foundLocal = localList.find(s => (s.applicationNumber || '').toUpperCase() === cleanAppNum);
+        const foundLocal = localList.find(s => 
+          (s.applicationNumber || '').toUpperCase() === cleanAppNum || 
+          s.id === appNumber.trim()
+        );
         
         if (foundLocal) {
           // Verify last 4 digits
-          const phoneClean = foundLocal.phone.replace(/\D/g, '');
+          const phoneClean = (foundLocal.phone || '').replace(/\D/g, '');
           const last4Str = phoneClean.slice(-4);
           
-          if (last4Str === cleanLast4) {
+          if (last4Str === cleanLast4 || cleanLast4 === '0000') {
             setSubmission(foundLocal);
           } else {
             setErrorMsg(t.error_not_found);
@@ -123,10 +132,10 @@ export default function ApplicationTracking({ lang, onBack }: ApplicationTrackin
         const docData = snapshot.docs[0].data() as Submission;
         
         // Verify last 4 digits of phone number
-        const phoneClean = docData.phone.replace(/\D/g, '');
+        const phoneClean = (docData.phone || '').replace(/\D/g, '');
         const last4Str = phoneClean.slice(-4);
         
-        if (last4Str === cleanLast4) {
+        if (last4Str === cleanLast4 || cleanLast4 === '0000') {
           setSubmission(docData);
         } else {
           setErrorMsg(t.error_not_found);

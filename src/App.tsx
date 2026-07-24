@@ -811,7 +811,7 @@ export default function App() {
               <Suspense fallback={<ComponentLoader />}>
                 {clientSubTab === 'chatbot' && (
                   <>
-                    <ClientChat onSubmissionCreated={handleSubmissionCreated} lang={lang} />
+                    <ClientChat onSubmissionCreated={handleSubmissionCreated} onNavigateToTracking={() => setClientSubTab('kuzatish')} lang={lang} />
                     
                     {/* Latest 3 News Section for Home Page */}
                     <div className="mt-12 pt-8 border-t border-[#1F2937] space-y-6">

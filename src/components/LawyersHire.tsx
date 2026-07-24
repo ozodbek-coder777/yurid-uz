@@ -21,7 +21,7 @@ import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
-import { saveApplicationToFirebase } from '../utils/firebaseHelper';
+import { saveApplicationToFirebase, getNextApplicationNumber } from '../utils/firebaseHelper';
 import MultiStepHireForm from './MultiStepHireForm';
 
 interface LawyersHireProps {
@@ -529,9 +529,12 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
 
         // Save directly to localStorage submissions_list
         try {
+          const appNumber = await getNextApplicationNumber();
           const submissionsList = JSON.parse(localStorage.getItem('submissions_list') || '[]');
           const newSub = {
             id: "sub_" + Date.now(),
+            applicationNumber: appNumber,
+            category: lang === 'uz' ? "Bevosita advokatga murojaat" : "Прямое обращение к адвокату",
             fullName: contactName || "Anonim Mijoz",
             phone: contactPhone || "Ko'rsatilmadi",
             incidentDate: new Date().toISOString().split('T')[0],
@@ -541,7 +544,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
               { role: 'user', text: `Mijoz ismi: ${contactName}, Tel: ${contactPhone}` },
               { role: 'user', text: `Xabar matni: ${contactMsg}` }
             ],
-            summary: `### 📞 Bevosita Bog'lanish So'rovi\n\nMijoz **${contactName}** sizga bevosita yozma murojaat qoldirdi.\n\n**Mijoz xabari:**\n"${contactMsg}"\n\n**Telefon raqami:** ${contactPhone}\n**Mutaxassislik:** ${activeContactLawyer.specialization}`,
+            summary: `### 📞 Bevosita Bog'lanish So'rovi (${appNumber})\n\nMijoz **${contactName}** sizga bevosita yozma murojaat qoldirdi.\n\n**Mijoz xabari:**\n"${contactMsg}"\n\n**Telefon raqami:** ${contactPhone}\n**Mutaxassislik:** ${activeContactLawyer.specialization}`,
             urgency: "O'RTA",
             status: "YANGI",
             createdAt: new Date().toISOString(),
@@ -549,6 +552,7 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
             fault: "Ko'rib chiqilmoqda",
             notes: `Mijoz bevosita yollash xizmati orqali "${activeContactLawyer.name}" advokatini tanladi.`,
             assignedLawyer: activeContactLawyer.id,
+            assignedLawyerId: activeContactLawyer.id,
             timeline: [
               {
                 status: "YANGI",
@@ -564,8 +568,8 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
           // Save to Firebase Firestore
           saveApplicationToFirebase(newSub as any);
           
-          alert("Arizangiz qabul qilindi!");
-          console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi.");
+          alert(`Arizangiz qabul qilindi!\nAriza raqamingiz: ${appNumber}`);
+          console.log("Bevosita yollash arizasi muvaffaqiyatli saqlandi:", appNumber);
         } catch (err) {
           console.error("Xatolik arizani saqlashda:", err);
         }

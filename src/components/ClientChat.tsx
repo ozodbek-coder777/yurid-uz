@@ -1,17 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Phone, Calendar, ShieldAlert, Sparkles, AlertCircle, Bot, CheckCircle, ClipboardList, Info, HelpCircle, ChevronDown, ChevronUp, Search, Copy, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChatMessage } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
-import { saveApplicationToFirebase, getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase, deleteDraftFromFirebase } from '../utils/firebaseHelper';
+import { saveApplicationToFirebase, getOrCreateDraftId, saveDraftToFirebase, getDraftFromFirebase, deleteDraftFromFirebase, getNextApplicationNumber } from '../utils/firebaseHelper';
 import { autoAssignLawyer } from '../utils/assignmentHelper';
 
 interface ClientChatProps {
   onSubmissionCreated?: () => void;
+  onNavigateToTracking?: () => void;
   lang: 'uz' | 'ru';
 }
 
-export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProps) {
+export default function ClientChat({ onSubmissionCreated, onNavigateToTracking, lang }: ClientChatProps) {
   // Pre-load from logged in user
   const [currentUser] = useState<any>(() => {
     const saved = localStorage.getItem('logged_in_user');
@@ -47,6 +48,8 @@ export default function ClientChat({ onSubmissionCreated, lang }: ClientChatProp
 
   const [loading, setLoading] = useState(false);
   const [finalSummary, setFinalSummary] = useState<string | null>(null);
+  const [createdAppNumber, setCreatedAppNumber] = useState<string>('');
+  const [copied, setCopied] = useState(false);
 
   // Load draft from Firebase on mount
   useEffect(() => {
@@ -308,6 +311,9 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
     setFinalSummary(summaryText);
 
     try {
+      const appNumber = await getNextApplicationNumber();
+      setCreatedAppNumber(appNumber);
+
       const assignment = autoAssignLawyer(incidentDescription);
       const assignedLawyerName = assignment ? assignment.lawyerName : (isRu ? "Ожидает назначения" : "Advokat kutilmoqda");
       const assignedLawyerId = assignment ? assignment.lawyerId : "";
@@ -315,6 +321,8 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       const submissionsList = JSON.parse(localStorage.getItem('submissions_list') || '[]');
       const newSub = {
         id: "sub_" + Date.now(),
+        applicationNumber: appNumber,
+        category: isRu ? "Обычная юридическая помощь" : "Oddiy huquqiy yordam",
         fullName,
         phone,
         incidentDate,
@@ -339,7 +347,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
             status: "YANGI",
             timestamp: new Date().toISOString(),
             updatedBy: "Tizim (Mijoz)",
-            comment: isRu ? "Заявка успешно принята." : "Murojaat muvaffaqiyatli qabul qilindi va tizimga yuborildi."
+            comment: isRu ? "Заявка на обычную юридическую помощь успешно принята." : "Oddiy huquqiy yordam arizasi muvaffaqiyatli qabul qilindi."
           }
         ]
       };
@@ -354,9 +362,6 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
       deleteDraftFromFirebase(draftId).catch(err => {
         console.error("Failed to delete draft after successful submission:", err);
       });
-      
-      // Show alert "Arizangiz qabul qilindi!"
-      alert("Arizangiz qabul qilindi!");
 
       if (onSubmissionCreated) {
         onSubmissionCreated();
@@ -691,21 +696,88 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
 
       {/* Step 3: Success Completed intake */}
       {step === 'success' && (
-        <div className="p-8 md:p-10 flex-1 flex flex-col justify-center items-center text-center space-y-6 bg-[#0D1017]">
-          <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shadow-sm border border-emerald-500/20 animate-bounce">
-            <CheckCircle className="w-10 h-10" />
+        <div className="p-6 md:p-8 flex-1 flex flex-col justify-center items-center text-center space-y-6 bg-[#0D1017]">
+          <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center shadow-sm border border-emerald-500/20 animate-bounce">
+            <CheckCircle className="w-8 h-8" />
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-1">
             <h4 className="text-xl font-bold font-sans text-white">{t.success_title}</h4>
-            <p className="text-sm text-gray-400 max-w-sm">
+            <p className="text-xs text-gray-400 max-w-sm">
               {t.success_desc}
             </p>
           </div>
 
-          <div className="bg-[#161B22] border border-[#1F2937] rounded-2xl p-5 text-left w-full text-gray-300 text-xs leading-relaxed max-h-56 overflow-y-auto space-y-2">
-            <p className="font-semibold text-white text-sm border-b border-[#1F2937] pb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-blue-400" />
+          {/* Application Tracking Badge */}
+          {createdAppNumber && (
+            <div className="bg-[#161B22] border border-blue-500/30 p-4 rounded-2xl w-full space-y-2 text-left shadow-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400 font-medium">
+                  {lang === 'ru' ? 'Номер вашей заявки:' : 'Ariza raqamingiz:'}
+                </span>
+                <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono font-bold text-xs px-2.5 py-0.5 rounded-md">
+                  {createdAppNumber}
+                </span>
+              </div>
+
+              {/* Stage level indicator */}
+              <div className="space-y-2 pt-2 border-t border-[#1F2937]">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-gray-400 font-medium">
+                    {lang === 'ru' ? 'Текущий этап:' : 'Hozirgi daraja/bosqich:'}
+                  </span>
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    {lang === 'ru' ? '1-й этап: Новая (Принята)' : '1-daraja: Yangi (Qabul qilindi)'}
+                  </span>
+                </div>
+
+                {/* Visual 4-Step Progress Bar */}
+                <div className="grid grid-cols-4 gap-1 pt-1">
+                  <div className="h-1.5 rounded-full bg-emerald-500"></div>
+                  <div className="h-1.5 rounded-full bg-[#1F2937]"></div>
+                  <div className="h-1.5 rounded-full bg-[#1F2937]"></div>
+                  <div className="h-1.5 rounded-full bg-[#1F2937]"></div>
+                </div>
+                <div className="grid grid-cols-4 text-[9px] text-gray-500 text-center pt-0.5 font-mono">
+                  <span className="text-emerald-400 font-bold">{lang === 'ru' ? '1. Новая' : '1. Yangi'}</span>
+                  <span>{lang === 'ru' ? '2. Обзор' : '2. Tahlil'}</span>
+                  <span>{lang === 'ru' ? '3. Адвокат' : '3. Advokat'}</span>
+                  <span>{lang === 'ru' ? '4. Итог' : '4. Yakun'}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdAppNumber);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-[11px] text-gray-300 hover:text-white bg-[#0D1017] border border-[#1F2937] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+                  <span>{copied ? (lang === 'ru' ? 'Скопировано!' : 'Nusxalandi!') : (lang === 'ru' ? 'Скопировать номер' : 'Raqamni nusxalash')}</span>
+                </button>
+
+                {onNavigateToTracking && (
+                  <button
+                    type="button"
+                    onClick={onNavigateToTracking}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    <span>{lang === 'ru' ? 'Отследить заявку' : 'Arizani kuzatish'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-[#161B22] border border-[#1F2937] rounded-2xl p-4 text-left w-full text-gray-300 text-xs leading-relaxed max-h-48 overflow-y-auto space-y-2">
+            <p className="font-semibold text-white text-xs border-b border-[#1F2937] pb-1.5 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
               <span>{t.summary_title}</span>
             </p>
             {finalSummary ? (
@@ -715,7 +787,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
             )}
           </div>
 
-          <div className="space-y-2 w-full max-w-xs">
+          <div className="space-y-2 w-full max-w-xs pt-1">
             <p className="text-xs text-gray-400">{t.success_footer_phone}</p>
             <div className="bg-[#161B22] text-[#E5E7EB] font-mono text-xs py-2 px-3 rounded-lg border border-[#1F2937]">
               {phone}
@@ -728,6 +800,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
                 setPhone('');
                 setIncidentDescription('');
                 setFinalSummary(null);
+                setCreatedAppNumber('');
               }}
               className="text-xs text-blue-400 hover:text-blue-300 font-medium pt-2 block mx-auto underline cursor-pointer"
             >
