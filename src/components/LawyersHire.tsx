@@ -643,7 +643,7 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
             <h2 className="text-xl sm:text-2xl font-sans font-bold text-white">
               {lang === 'ru' ? "Заявка успешно принята!" : "Arizangiz muvaffaqiyatli qabul qilindi!"}
             </h2>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-400 font-mono text-sm font-bold rounded-xl">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-300 font-mono text-sm sm:text-base font-bold rounded-xl shadow-md">
               <span>{lang === 'ru' ? "Номер заявки:" : "Ariza raqami:"} {submittedAppInfo.appNumber}</span>
               <button
                 type="button"
@@ -652,11 +652,31 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
                   setCopiedAppNum(true);
                   setTimeout(() => setCopiedAppNum(false), 2000);
                 }}
-                className="p-1 hover:text-white transition-colors cursor-pointer"
+                className={`ml-1 px-2.5 py-1 rounded-lg text-xs font-sans font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                  copiedAppNum 
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse'
+                }`}
                 title={lang === 'ru' ? "Скопировать" : "Nusxalash"}
               >
-                {copiedAppNum ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gray-400" />}
+                {copiedAppNum ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-amber-400" />}
+                <span>{copiedAppNum ? (lang === 'ru' ? "Скопировано" : "Nusxalandi") : (lang === 'ru' ? "Копировать" : "Nusxalash")}</span>
               </button>
+            </div>
+          </div>
+
+          {/* Warning / Reminder Box */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 flex items-start gap-2.5 text-amber-300 text-xs text-left">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <span className="font-bold text-amber-300 block text-xs">
+                {lang === 'ru' ? '⚠️ Важное напоминание:' : '⚠️ MUHIM ESLATMA:'}
+              </span>
+              <p className="text-[11px] text-amber-200/90 leading-tight">
+                {lang === 'ru' 
+                  ? 'Не забудьте скопировать или сохранить номер вашей заявки! Он пригодится для отслеживания статуса.' 
+                  : 'Ariza raqamingizni esdan chiqarmay nusxalab oling! Keyinchalik arizangiz holatini "Arizani kuzatish" bo\'limida bilish uchun ushbu raqam kerak bo\'ladi.'}
+              </p>
             </div>
           </div>
 

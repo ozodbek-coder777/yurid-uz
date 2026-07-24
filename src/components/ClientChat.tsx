@@ -710,18 +710,33 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
 
           {/* Application Tracking Badge */}
           {createdAppNumber && (
-            <div className="bg-[#161B22] border border-blue-500/30 p-4 rounded-2xl w-full space-y-2 text-left shadow-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400 font-medium">
+            <div className="bg-[#161B22] border border-blue-500/30 p-4 rounded-2xl w-full space-y-3 text-left shadow-lg">
+              <div className="flex items-center justify-between bg-blue-500/10 border border-blue-500/20 p-2.5 rounded-xl">
+                <span className="text-xs text-gray-300 font-medium">
                   {lang === 'ru' ? 'Номер вашей заявки:' : 'Ariza raqamingiz:'}
                 </span>
-                <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 font-mono font-bold text-xs px-2.5 py-0.5 rounded-md">
+                <span className="bg-blue-500/20 text-blue-300 border border-blue-400/40 font-mono font-bold text-sm px-3 py-1 rounded-lg">
                   {createdAppNumber}
                 </span>
               </div>
 
+              {/* Notice / Reminder Box for copying app number */}
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 flex items-start gap-2.5 text-amber-300 text-xs">
+                <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-left">
+                  <span className="font-bold text-amber-300 block text-[11px] sm:text-xs">
+                    {lang === 'ru' ? '⚠️ Важное напоминание:' : '⚠️ MUHIM ESLATMA:'}
+                  </span>
+                  <p className="text-[10px] sm:text-[11px] text-amber-200/90 leading-tight">
+                    {lang === 'ru' 
+                      ? 'Не забудьте скопировать или сохранить номер заявки! Он понадобится для отслеживания на странице «Отследить заявку».' 
+                      : 'Ariza raqamingizni esdan chiqarmay nusxalab oling! Keyinchalik arizangiz holatini "Arizani kuzatish" bo\'limida bilish uchun ushbu raqam kerak bo\'ladi.'}
+                  </p>
+                </div>
+              </div>
+
               {/* Stage level indicator */}
-              <div className="space-y-2 pt-2 border-t border-[#1F2937]">
+              <div className="space-y-2 pt-1 border-t border-[#1F2937]">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="text-gray-400 font-medium">
                     {lang === 'ru' ? 'Текущий этап:' : 'Hozirgi daraja/bosqich:'}
@@ -755,9 +770,13 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                   }}
-                  className="inline-flex items-center gap-1.5 text-[11px] text-gray-300 hover:text-white bg-[#0D1017] border border-[#1F2937] px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-md ${
+                    copied 
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                      : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 animate-pulse'
+                  }`}
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
+                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-amber-400" />}
                   <span>{copied ? (lang === 'ru' ? 'Скопировано!' : 'Nusxalandi!') : (lang === 'ru' ? 'Скопировать номер' : 'Raqamni nusxalash')}</span>
                 </button>
 
@@ -765,7 +784,7 @@ Bizning professional advokatimiz siz bilan kiritilgan aloqa vositasi (**${phone}
                   <button
                     type="button"
                     onClick={onNavigateToTracking}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                   >
                     <Search className="w-3.5 h-3.5" />
                     <span>{lang === 'ru' ? 'Отследить заявку' : 'Arizani kuzatish'}</span>
