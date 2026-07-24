@@ -23,6 +23,7 @@ import {
   Eye, 
   X,
   TrendingUp,
+  Scale,
   AlertCircle,
   RefreshCw,
   Database,
@@ -59,6 +60,7 @@ import AdminPoliceReports from './AdminPoliceReports';
 import AdminBlacklist from './AdminBlacklist';
 import AdminUsersList from './AdminUsersList';
 import AdminAuditLogs from './AdminAuditLogs';
+import AdminDisputes from './AdminDisputes';
 import { checkAndAutoBlacklist, getBlacklistedUser } from '../utils/blacklist';
 import { generateSubmissionPDF, exportSubmissionsToExcel } from '../utils/reportGenerator';
 import { getUnreadCount } from '../utils/chatHelper';
@@ -1475,6 +1477,20 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
         {currentUser?.role === 'admin' && (
           <button
+            onClick={() => setActivePanelTab('disputes')}
+            className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+              activePanelTab === 'disputes'
+                ? 'border-rose-500 text-rose-400 font-bold bg-rose-500/10'
+                : 'border-transparent text-rose-400/80 hover:text-rose-300'
+            }`}
+          >
+            <Scale className="w-4 h-4 text-rose-400" />
+            <span>{lang === 'ru' ? 'Споры и Жалобы' : 'Nizolar va Shikoyatlar'}</span>
+          </button>
+        )}
+
+        {currentUser?.role === 'admin' && (
+          <button
             onClick={() => setActivePanelTab('settings')}
             className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
               activePanelTab === 'settings'
@@ -2166,6 +2182,11 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
       {/* Audit Logs Tab */}
       {activePanelTab === 'audit_logs' && currentUser?.role === 'admin' && (
         <AdminAuditLogs lang={lang} />
+      )}
+
+      {/* Disputes Tab */}
+      {activePanelTab === 'disputes' && currentUser?.role === 'admin' && (
+        <AdminDisputes lang={lang} />
       )}
 
       {/* Profil Tab */}

@@ -570,6 +570,17 @@ export default function SubscriptionManagement({
                 </div>
               </div>
 
+              {/* Refund Guarantee Notice (Point 6) */}
+              <div className="bg-emerald-950/20 border border-emerald-500/30 p-3.5 rounded-xl text-xs text-emerald-300 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>Pul Qaytarish Kafolati (100% Refund Policy)</span>
+                </div>
+                <p className="text-[11px] text-gray-300 leading-relaxed">
+                  Agar to'lov qilganingizdan so'ng verifikatsiyadan o'ta olmasangiz yoki so'rovingiz rad etilsa, to'langan mablag' 3-5 bank ish kunida to'liq kartangizga qaytarib beriladi.
+                </p>
+              </div>
+
               {/* Drag & Drop Upload Zone */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-slate-300">To'lov Cheki (Kvitansiya) Rasmi:</label>

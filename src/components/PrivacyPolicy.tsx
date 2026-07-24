@@ -35,12 +35,12 @@ export default function PrivacyPolicy({ lang, onBack }: PrivacyPolicyProps) {
             <ShieldCheck className="w-6 h-6" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-sans font-bold text-white tracking-tight">
-            {isUz ? "Maxfiylik Siyosati" : "Политика конфиденциальности"}
+            {isUz ? "Maxfiylik Siyosati (O'zR O'RQ-547 Qonuni Muvofiq)" : "Политика конфиденциальности (Закон ЗРУ-547 РУз)"}
           </h1>
           <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
             {isUz 
-              ? "Sizning shaxsiy ma'lumotlaringiz xavfsizligi biz uchun birinchi o'rinda turadi. Yurid.uz xizmatlaridan foydalanganda ma'lumotlaringiz qanday to'planishi, qayta ishlanishi va himoya qilinishi bilan tanishing."
-              : "Безопасность ваших личных данных является нашим приоритетом. Ознакомьтесь с тем, как ваши данные собираются, обрабатываются и защищаются при использовании услуг Yurid.uz."}
+              ? "Sizning shaxsiy ma'lumotlaringiz xavfsizligi O'zbekiston Respublikasining 'Shaxsga doir ma'lumotlar to'g'risida'gi O'RQ-547-sonli Qonuniga muvofiq qat'iy himoya qilinadi."
+              : "Безопасность ваших личных данных строго защищается в соответствии с Законом Республики Узбекистан № ЗРУ-547 'О персональных данных'."}
           </p>
         </div>
 

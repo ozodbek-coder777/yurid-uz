@@ -38,6 +38,7 @@ export default function WitnessesList({ lang }: WitnessesListProps) {
   const [newCaseId, setNewCaseId] = useState('');
   const [newLawyer, setNewLawyer] = useState('Karimov Alisher');
   const [newDesc, setNewDesc] = useState('');
+  const [falseTestimonyAgreed, setFalseTestimonyAgreed] = useState(false);
   const [regSuccess, setRegSuccess] = useState(false);
   const [regError, setRegError] = useState('');
 
@@ -65,6 +66,13 @@ export default function WitnessesList({ lang }: WitnessesListProps) {
 
     if (!newIsm.trim() || !newPhone.trim() || !newDesc.trim()) {
       setRegError(lang === 'uz' ? "Iltimos, barcha majburiy maydonlarni to'ldiring!" : "Пожалуйста, заполните все обязательные поля!");
+      return;
+    }
+
+    if (!falseTestimonyAgreed) {
+      setRegError(lang === 'uz' 
+        ? "Yolg'on ko'rsatuv berganlik uchun jinoiy javobgarlik haqidagi ogohlantirishga rozilik bildirishingiz shart!" 
+        : "Вы должны подтвердить согласие с предупреждением об уголовной ответственности за дачу ложных показаний!");
       return;
     }
 
@@ -427,6 +435,32 @@ export default function WitnessesList({ lang }: WitnessesListProps) {
                       required
                       className="w-full min-h-[90px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-gray-200 placeholder-gray-600 focus:outline-hidden focus:ring-1 focus:ring-teal-500/50 resize-none"
                     />
+                  </div>
+
+                  {/* Criminal Liability Warning Box (Point 3) */}
+                  <div className="p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl space-y-2 text-[11px] text-amber-300">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                      <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{lang === 'uz' ? "Huquqiy Ogohlantirish (JK 237, 238-moddalar)" : "Правовое Предупреждение (УК РУз)"}</span>
+                    </div>
+                    <p className="leading-relaxed text-gray-300">
+                      {lang === 'uz'
+                        ? "O'zbekiston Respublikasi Jinoyat Kodeksining 237- (Yolg'on xabar berish) va 238-moddalariga (Yolg'on ko'rsatuv berish) muvofiq, ko'ra-bila turib yolg'on ma'lumot berish jinoiy javobgarlikka sabab bo'ladi."
+                        : "Согласно ст. 237 и 238 УК Республики Узбекистан, заведомо ложные показания и заведение в заблуждение следствия влечет уголовную ответственность."}
+                    </p>
+                    <label className="flex items-start gap-2 pt-1 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={falseTestimonyAgreed}
+                        onChange={(e) => setFalseTestimonyAgreed(e.target.checked)}
+                        className="mt-0.5 rounded border-amber-500/50 text-teal-500 focus:ring-teal-500 bg-slate-950"
+                      />
+                      <span className="text-[10px] text-white font-semibold leading-snug">
+                        {lang === 'uz'
+                          ? "Men yolg'on ko'rsatuv berganlik uchun O'zR Qonunchiligiga muvofiq jinoiy javobgarlik haqida ogohlantirildim va ma'lumotlarim xolisligiga javob beraman."
+                          : "Я предупрежден об уголовной ответственности за дачу ложных показаний и подтверждаю достоверность сведений."}
+                      </span>
+                    </label>
                   </div>
 
                   <button

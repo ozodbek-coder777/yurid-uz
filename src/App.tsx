@@ -1,9 +1,12 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
-import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, Search, ShieldAlert } from 'lucide-react';
+import { Bot, Shield, ChevronRight, Scale, Info, Sparkles, MessageSquare, ClipboardList, HelpCircle, EyeOff, Globe, User, Award, Menu, X, Search, ShieldAlert, Bell, AlertCircle } from 'lucide-react';
 import { getNews } from './utils/newsHelper';
 import { getBlacklistedUser } from './utils/blacklist';
 import { getUnreadCount } from './utils/chatHelper';
 import { getChatRoomsFromFirebase, onSnapshotChatRooms, onSnapshotFeatureSettings } from './utils/firebaseHelper';
+import ErrorBoundary from './components/ErrorBoundary';
+import NotificationsModal from './components/NotificationsModal';
+import DisputeModal from './components/DisputeModal';
 
 
 // Lazy load large sub-tab and modal components to reduce initial page load size on mobile
@@ -83,6 +86,10 @@ export default function App() {
   const [lang, setLang] = useState<'uz' | 'ru'>(() => {
     return (localStorage.getItem('app_lang') as 'uz' | 'ru') || 'uz';
   });
+
+  // Modals state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isDisputeOpen, setIsDisputeOpen] = useState(false);
 
   // Hidden panel protection state
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
@@ -406,8 +413,27 @@ export default function App() {
             </div>
 
             {/* Desktop Controls (Hidden on Mobile) */}
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
               
+              {/* Notifications Button */}
+              <button
+                onClick={() => setIsNotificationsOpen(true)}
+                className="relative bg-[#161B22] border border-[#30363D] hover:border-amber-500 hover:text-amber-400 text-gray-400 w-11 h-11 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+                title={lang === 'uz' ? "Bildirishnomalar" : "Уведомления"}
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400"></span>
+              </button>
+
+              {/* Dispute Report Button */}
+              <button
+                onClick={() => setIsDisputeOpen(true)}
+                className="bg-[#161B22] border border-[#30363D] hover:border-rose-500 hover:text-rose-400 text-gray-400 w-11 h-11 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+                title={lang === 'uz' ? "Shikoyat va Nizo yuborish" : "Подать жалобу"}
+              >
+                <AlertCircle className="w-5 h-5" />
+              </button>
+
               {/* Chat Button with Unread Badge */}
               <button
                 onClick={() => setIsChatOpen(true)}
@@ -977,6 +1003,28 @@ export default function App() {
       <Suspense fallback={null}>
         <ClientChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} lang={lang} />
       </Suspense>
+
+      {/* Notifications Modal */}
+      <NotificationsModal
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        lang={lang}
+        currentUser={null}
+        onNavigateTab={(tabName) => {
+          setActiveTab('client');
+          if (['chatbot', 'hire', 'police', 'profile', 'witnesses', 'news', 'kuzatish'].includes(tabName)) {
+            setClientSubTab(tabName as any);
+          }
+        }}
+      />
+
+      {/* Dispute Modal */}
+      <DisputeModal
+        isOpen={isDisputeOpen}
+        onClose={() => setIsDisputeOpen(false)}
+        lang={lang}
+        currentUser={null}
+      />
 
     </div>
   );

@@ -77,12 +77,38 @@ export default function TermsOfService({ lang, onBack }: TermsOfServiceProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-white font-sans font-bold text-base">
               <HelpCircle className="w-5 h-5 text-amber-400" />
-              <h2>{isUz ? "3. Foydalanuvchining majburiyatlari" : "3. Обязанности пользователя"}</h2>
+              <h2>{isUz ? "3. Foydalanuvchining majburiyatlari va javobgarligi" : "3. Обязанности и ответственность пользователя"}</h2>
             </div>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
               {isUz
-                ? "Foydalanuvchi tizimda soxta ma'lumotlar bermaslik, boshqa shaxslar nomidan murojaat qilmaslik va noqonuniy hujjatlarni yuklamaslik majburiyatini oladi. Ushbu qoidalarni buzgan foydalanuvchilar bloklanishi (qora ro'yxatga kiritilishi) mumkin."
-                : "Пользователь обязуется не предоставлять ложную информацию, не обращаться от имени третьих лиц без законных оснований и не загружать нелегальные документы. Нарушители могут быть заблокированы (внесены в черный список)."}
+                ? "Foydalanuvchi tizimda soxta ma'lumotlar bermaslik, boshqa shaxslar nomidan murojaat qilmaslik va noqonuniy hujjatlarni yuklamaslik majburiyatini oladi. Guvohlik ko'rsatmalari va politsiya arizalarida yolg'on ma'lumot berish O'zbekiston Respublikasi Jinoyat Kodeksining 237- va 238-moddalariga muvofiq jinoiy javobgarlikka sabab bo'ladi."
+                : "Пользователь обязуется не предоставлять ложную информацию. Предоставление заведомо ложных показаний или сведений в заявлениях влечет уголовную ответственность по ст. 237 и 238 УК Республики Узбекистан."}
+            </p>
+          </div>
+
+          {/* Section 4 */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-white font-sans font-bold text-base">
+              <FileWarning className="w-5 h-5 text-amber-400" />
+              <h2>{isUz ? "4. To'lov va Pul qaytarish siyosati (Refund Policy)" : "4. Оплата и политика возврата (Refund Policy)"}</h2>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+              {isUz
+                ? "Agar advokat Premium obuna uchun to'lov qilib, verifikatsiya bosqichidan o'ta olmasa yoki uning litsenziya hujjatlari rad etilsa, to'langan mablag' 3-5 bank ish kuni ichida advokatning bank kartasiga to'liq qaytariladi."
+                : "Если адвокат оплатил подписку Premium, но не прошел верификацию или его документы отклонены, уплаченная сумма возвращается в полном объеме в течение 3-5 банковских дней."}
+            </p>
+          </div>
+
+          {/* Section 5 */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-white font-sans font-bold text-base">
+              <Scale className="w-5 h-5 text-amber-400" />
+              <h2>{isUz ? "5. Nizolarni hal qilish va shikoyatlar mexanizmi" : "5. Разрешение споров и механизм жалоб"}</h2>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">
+              {isUz
+                ? "Mijoz va advokat o'rtasida yuzaga kelgan har qanday tushunmovchilik va e'tirozlar portal ichidagi rasmiy 'Shikoyat yuborish' mexanizmi orqali ko'rib chiqiladi. Moderator va Super Admin 24 soat ichida nizoni xolis ko'rib chiqib, tegishli chora ko'radi."
+                : "Любые споры и претензии между клиентом и адвокатом рассматриваются через официальный механизм подачи жалоб на портале в течение 24 часов суперадминистратором."}
             </p>
           </div>
 

@@ -560,6 +560,16 @@ export default function MultiStepHireForm({ lang, selectedLawyer, onClose, onSuc
             ? "Muvaffaqiyatli va to'liq tahlil uchun quyidagi bosqichlarni to'ldiring. Barcha ma'lumotlaringiz qat'iy sir saqlanadi."
             : "Для детального анализа заполните следующие шаги. Все ваши данные строго конфиденциальны."}
         </p>
+
+        {/* Legal Disclaimer Box (Point 1) */}
+        <div className="mt-3 bg-amber-950/20 border border-amber-500/20 rounded-xl p-3 text-[11px] text-amber-300 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <span>
+            {isUz
+              ? "Ogohlantirish: AI tomonidan taqdim etiladigan dastlabki case-severity baholashi va xulosalari — yuridik maslahat emas, balki axborot xarakteridagi tahlildir. Qat'iy huquqiy xulosalarni faqat tayinlangan advokat beradi."
+              : "Предупреждение: Анализ ИИ и оценка тяжести дела носят ознакомительный характер и не являются юридической консультацией."}
+          </span>
+        </div>
       </div>
 
       {/* Progress Multi-step indicator */}

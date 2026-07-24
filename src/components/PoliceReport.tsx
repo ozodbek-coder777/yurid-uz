@@ -387,6 +387,21 @@ export default function PoliceReportComponent({ lang }: PoliceReportProps) {
         </p>
       </div>
 
+      {/* Prominent Legal Disclaimer (Point 1) */}
+      <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 max-w-4xl mx-auto text-amber-300 text-xs">
+        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="font-bold text-amber-200">
+            {lang === 'ru' ? "⚠️ Важное Юридическое Предупреждение (Disclaimer)" : "⚠️ Muhim Huquqiy Ogohlantirish (Mas'uliyatni Cheklash)"}
+          </p>
+          <p className="text-gray-300 leading-relaxed text-[11px]">
+            {lang === 'ru'
+              ? "Автоматический анализ ИИ и оценка тяжести нарушений предоставляются исключительно в ознакомительных целях и НЕ являются официальной юридической консультацией или процессуальным документом. Все официальные процессуальные действия подлежат проверке уполномоченными адвокатами и правоохранительными органами."
+              : "Platformadagi AI case-severity baholashi va dastlabki xulosalar faqat axborot berish maqsadida taqdim etiladi va rasmiy yuridik maslahat yoki protsessual hujjat hisoblanmaydi. Muayyan huquqiy qaror qabul qilishdan oldin rasman tasdiqlangan advokat bilan maslahatlashing."}
+          </p>
+        </div>
+      </div>
+
       {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
