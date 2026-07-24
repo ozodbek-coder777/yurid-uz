@@ -112,6 +112,21 @@ export interface RegisteredUser {
   activeCaseLimit?: number | null;
 }
 
+export interface PaymentRequest {
+  id: string;
+  lawyerId: string;
+  lawyerName: string;
+  lawyerEmail?: string;
+  lawyerPhone?: string;
+  amount: number;
+  receiptImageUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: string;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
+  rejectionReason?: string | null;
+}
+
 export interface Payment {
   id: string;
   lawyerId: string;

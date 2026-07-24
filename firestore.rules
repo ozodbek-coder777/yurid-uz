@@ -52,6 +52,11 @@ service cloud.firestore {
       allow create, read, update, delete: if true;
     }
 
+    // Payment requests collection for manual receipt uploads and admin approval
+    match /paymentRequests/{requestId} {
+      allow read, write: if true;
+    }
+
     // Default catch-all rules
     match /{document=**} {
       allow read, write: if true;

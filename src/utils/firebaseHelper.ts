@@ -1,4 +1,4 @@
-import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -627,5 +627,87 @@ export async function getPaymentsFromFirebase(lawyerId?: string): Promise<Paymen
     return [];
   }
 }
+
+/**
+ * 30. Chek yuklash bilan manual to'lov so'rovini (PaymentRequest) Firestore-ga saqlash
+ */
+export async function savePaymentRequestToFirebase(reqData: PaymentRequest): Promise<boolean> {
+  const path = 'paymentRequests';
+  try {
+    await setDoc(doc(db, path, reqData.id), reqData);
+    return true;
+  } catch (error) {
+    console.error("PaymentRequest saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 31. Barcha to'lov so'rovlarini olish
+ */
+export async function getPaymentRequestsFromFirebase(): Promise<PaymentRequest[]> {
+  const path = 'paymentRequests';
+  try {
+    const q = query(collection(db, path), orderBy('submittedAt', 'desc'));
+    const snapshot = await getDocs(q);
+    const requests: PaymentRequest[] = [];
+    snapshot.forEach((docSnap) => {
+      requests.push(docSnap.data() as PaymentRequest);
+    });
+    return requests;
+  } catch (error) {
+    console.error("PaymentRequests olishda xatolik:", error);
+    return [];
+  }
+}
+
+/**
+ * 32. Realtime PaymentRequests listener
+ */
+export function onSnapshotPaymentRequests(callback: (requests: PaymentRequest[]) => void) {
+  const path = 'paymentRequests';
+  try {
+    const q = query(collection(db, path), orderBy('submittedAt', 'desc'));
+    return onSnapshot(q, (snapshot) => {
+      const requests: PaymentRequest[] = [];
+      snapshot.forEach((docSnap) => {
+        requests.push(docSnap.data() as PaymentRequest);
+      });
+      callback(requests);
+    }, (error) => {
+      console.error("PaymentRequests listener error:", error);
+    });
+  } catch (error) {
+    console.error("onSnapshotPaymentRequests error:", error);
+    return () => {};
+  }
+}
+
+/**
+ * 33. PaymentRequest statusini (approved / rejected) yangilash
+ */
+export async function updatePaymentRequestStatusInFirebase(
+  requestId: string,
+  status: 'approved' | 'rejected',
+  reviewedBy: string = 'superadmin',
+  rejectionReason: string | null = null
+): Promise<boolean> {
+  const path = 'paymentRequests';
+  try {
+    const docRef = doc(db, path, requestId);
+    const updates = {
+      status,
+      reviewedAt: new Date().toISOString(),
+      reviewedBy,
+      rejectionReason: status === 'rejected' ? rejectionReason : null
+    };
+    await updateDoc(docRef, updates);
+    return true;
+  } catch (error) {
+    console.error("PaymentRequest statusini yangilashda xatolik:", error);
+    return false;
+  }
+}
+
 
 

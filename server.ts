@@ -913,6 +913,7 @@ app.patch("/api/submissions/:id/assign", async (req, res) => {
 
 // Payments storage
 const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
+const PAYMENT_REQUESTS_FILE = path.join(DATA_DIR, "payment_requests.json");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
 const readPayments = (): any[] => {
@@ -929,6 +930,23 @@ const writePayments = (data: any[]) => {
     fs.writeFileSync(PAYMENTS_FILE, JSON.stringify(data, null, 2), "utf8");
   } catch (err) {
     console.error("Error writing payments", err);
+  }
+};
+
+const readPaymentRequests = (): any[] => {
+  if (!fs.existsSync(PAYMENT_REQUESTS_FILE)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(PAYMENT_REQUESTS_FILE, "utf8"));
+  } catch {
+    return [];
+  }
+};
+
+const writePaymentRequests = (data: any[]) => {
+  try {
+    fs.writeFileSync(PAYMENT_REQUESTS_FILE, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error writing payment requests", err);
   }
 };
 
@@ -1220,6 +1238,201 @@ app.get("/api/payments", (req, res) => {
     return res.json(payments.filter(p => p.lawyerId === String(lawyerId)));
   }
   return res.json(payments);
+});
+
+// API: Get payment requests (Manual verification)
+app.get("/api/payment-requests", (req, res) => {
+  const { lawyerId } = req.query;
+  const requests = readPaymentRequests();
+  if (lawyerId) {
+    return res.json(requests.filter(r => r.lawyerId === String(lawyerId)));
+  }
+  return res.json(requests);
+});
+
+// API: Create new payment request with receipt image
+app.post("/api/payment-requests/create", async (req, res) => {
+  try {
+    const { lawyerId, lawyerName, lawyerEmail, lawyerPhone, amount = 200000, receiptImageUrl } = req.body || {};
+    
+    if (!lawyerId) {
+      return res.status(400).json({ error: "Advokat ID kiritilishi shart!" });
+    }
+    if (!receiptImageUrl) {
+      return res.status(400).json({ error: "To'lov cheki rasmi yuklanishi shart!" });
+    }
+
+    const requests = readPaymentRequests();
+    const existingPending = requests.find(r => (r.lawyerId === lawyerId || (lawyerEmail && r.lawyerEmail === lawyerEmail)) && r.status === 'pending');
+    if (existingPending) {
+      return res.status(400).json({ 
+        error: "Sizda allaqachon ko'rib chiqilayotgan to'lov so'rovi mavjud! Iltimos, admin tasdiqlashini kuting (1-24 soat).",
+        hasPending: true,
+        pendingRequest: existingPending
+      });
+    }
+
+    const newRequest = {
+      id: "prq_" + Date.now(),
+      lawyerId,
+      lawyerName: lawyerName || "Advokat",
+      lawyerEmail: lawyerEmail || "",
+      lawyerPhone: lawyerPhone || "",
+      amount: Number(amount) || 200000,
+      receiptImageUrl,
+      status: "pending",
+      submittedAt: new Date().toISOString(),
+      reviewedAt: null,
+      reviewedBy: null,
+      rejectionReason: null
+    };
+
+    requests.unshift(newRequest);
+    writePaymentRequests(requests);
+
+    // Save to Firestore paymentRequests collection
+    const { firestoreDb } = initFirebase();
+    if (isFirestoreSupported && firestoreDb) {
+      try {
+        const reqRef = doc(firestoreDb, "paymentRequests", newRequest.id);
+        await setDoc(reqRef, newRequest, { merge: true }).catch(() => {});
+      } catch (fErr) {
+        console.error("Firestore paymentRequests save error:", fErr);
+      }
+    }
+
+    return res.json({
+      success: true,
+      request: newRequest,
+      message: "To'lov cheki muvaffaqiyatli yuborildi. So'rovingiz ko'rib chiqilmoqda (1-24 soat)."
+    });
+  } catch (err: any) {
+    console.error("Payment request creation error:", err);
+    return res.status(500).json({ error: "To'lov so'rovini saqlashda xatolik yuz berdi." });
+  }
+});
+
+// API: Approve payment request
+app.post("/api/payment-requests/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reviewedBy = "superadmin" } = req.body || {};
+
+    const requests = readPaymentRequests();
+    const index = requests.findIndex(r => r.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "To'lov so'rovi topilmadi." });
+    }
+
+    const reqData = requests[index];
+    const reviewedAt = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    requests[index] = {
+      ...reqData,
+      status: "approved",
+      reviewedAt,
+      reviewedBy
+    };
+    writePaymentRequests(requests);
+
+    // Activate Premium for Lawyer in Users
+    const lawyerId = reqData.lawyerId;
+    const users = readUsers();
+    const uIndex = users.findIndex(u => u.id === lawyerId || u.email === lawyerId || u.email === reqData.lawyerEmail);
+    if (uIndex !== -1) {
+      users[uIndex].subscriptionTier = "premium";
+      users[uIndex].subscriptionExpiresAt = expiresAt;
+      users[uIndex].activeCaseLimit = null;
+      writeUsers(users);
+    }
+
+    // Update Firestore
+    const { firestoreDb } = initFirebase();
+    if (isFirestoreSupported && firestoreDb) {
+      try {
+        const prRef = doc(firestoreDb, "paymentRequests", id);
+        await setDoc(prRef, { status: "approved", reviewedAt, reviewedBy }, { merge: true }).catch(() => {});
+
+        if (lawyerId) {
+          const userRef = doc(firestoreDb, "users", lawyerId);
+          const profileRef = doc(firestoreDb, "user_profiles", lawyerId);
+          const subUpdates = {
+            subscriptionTier: "premium",
+            subscriptionExpiresAt: expiresAt,
+            activeCaseLimit: null
+          };
+          await setDoc(userRef, subUpdates, { merge: true }).catch(() => {});
+          await setDoc(profileRef, subUpdates, { merge: true }).catch(() => {});
+        }
+      } catch (fErr) {
+        console.error("Firestore approval update error:", fErr);
+      }
+    }
+
+    return res.json({
+      success: true,
+      request: requests[index],
+      subscriptionTier: "premium",
+      subscriptionExpiresAt: expiresAt,
+      message: `"${reqData.lawyerName}" to'lov so'rovi tasdiqlandi! Premium 30 kunga faollashtirildi.`
+    });
+  } catch (err: any) {
+    console.error("Error approving payment request:", err);
+    return res.status(500).json({ error: "Tasdiqlashda xatolik yuz berdi." });
+  }
+});
+
+// API: Reject payment request
+app.post("/api/payment-requests/:id/reject", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rejectionReason, reviewedBy = "superadmin" } = req.body || {};
+
+    if (!rejectionReason || !rejectionReason.trim()) {
+      return res.status(400).json({ error: "Rad etish sababini kiritish shart!" });
+    }
+
+    const requests = readPaymentRequests();
+    const index = requests.findIndex(r => r.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "To'lov so'rovi topilmadi." });
+    }
+
+    const reqData = requests[index];
+    const reviewedAt = new Date().toISOString();
+
+    requests[index] = {
+      ...reqData,
+      status: "rejected",
+      rejectionReason: rejectionReason.trim(),
+      reviewedAt,
+      reviewedBy
+    };
+    writePaymentRequests(requests);
+
+    // Update Firestore
+    const { firestoreDb } = initFirebase();
+    if (isFirestoreSupported && firestoreDb) {
+      try {
+        const prRef = doc(firestoreDb, "paymentRequests", id);
+        await setDoc(prRef, { status: "rejected", rejectionReason: rejectionReason.trim(), reviewedAt, reviewedBy }, { merge: true }).catch(() => {});
+      } catch (fErr) {
+        console.error("Firestore rejection update error:", fErr);
+      }
+    }
+
+    return res.json({
+      success: true,
+      request: requests[index],
+      message: "To'lov so'rovi rad etildi."
+    });
+  } catch (err: any) {
+    console.error("Error rejecting payment request:", err);
+    return res.status(500).json({ error: "Rad etishda xatolik yuz berdi." });
+  }
 });
 
 // API: Delete submission

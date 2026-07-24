@@ -170,6 +170,45 @@
         }
       },
       "required": ["lawyerHiring", "policeComplaint", "witnesses", "news"]
+    },
+    "PaymentRequest": {
+      "title": "PaymentRequest",
+      "description": "Manual subscription payment request with uploaded receipt image for admin verification",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "lawyerId": {
+          "type": "string"
+        },
+        "lawyerName": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "receiptImageUrl": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "submittedAt": {
+          "type": "string"
+        },
+        "reviewedAt": {
+          "type": "string"
+        },
+        "reviewedBy": {
+          "type": "string"
+        },
+        "rejectionReason": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "lawyerId", "lawyerName", "amount", "receiptImageUrl", "status", "submittedAt"]
     }
   },
   "firestore": {
@@ -192,6 +231,10 @@
     "payments": {
       "schema": "Payment",
       "description": "Payment transactions for subscription plans"
+    },
+    "paymentRequests": {
+      "schema": "PaymentRequest",
+      "description": "Manual payment verification requests with receipt images"
     }
   }
 }
