@@ -92,6 +92,9 @@ export interface LawyerDetails {
   role?: string;
   isAvailable?: boolean;
   activeCases?: number;
+  subscriptionTier?: 'free' | 'premium';
+  subscriptionExpiresAt?: string | null;
+  activeCaseLimit?: number | null;
 }
 
 export interface RegisteredUser {
@@ -104,6 +107,20 @@ export interface RegisteredUser {
   rasm: string | null;
   sana?: string;
   role?: string;
+  subscriptionTier?: 'free' | 'premium';
+  subscriptionExpiresAt?: string | null;
+  activeCaseLimit?: number | null;
+}
+
+export interface Payment {
+  id: string;
+  lawyerId: string;
+  amount: number;
+  provider: 'payme' | 'click';
+  status: 'pending' | 'completed' | 'failed';
+  transactionId: string;
+  createdAt: string;
+  completedAt?: string | null;
 }
 
 export type PoliceReportType = 'Jinoyat' | 'Ma\'muriy' | 'Boshqa';

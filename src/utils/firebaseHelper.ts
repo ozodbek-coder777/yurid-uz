@@ -1,4 +1,4 @@
-import { Submission, RegisteredUser, PoliceReport, ChatRoom } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -552,4 +552,80 @@ export async function getNextApplicationNumber(): Promise<string> {
     return `YU-${localCounter}`;
   }
 }
+
+/**
+ * 27. To'lov (Payment) hujjatini Firebase Firestore-ga saqlash
+ */
+export async function savePaymentToFirebase(payment: Payment): Promise<boolean> {
+  const path = 'payments';
+  try {
+    console.log("To'lov Firestore-ga saqlanmoqda...", payment.id);
+    await setDoc(doc(db, path, payment.id), payment);
+    return true;
+  } catch (error) {
+    console.error("To'lovni Firestore-ga saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 28. Advokat obunasini (Subscription) yangilash
+ */
+export async function updateLawyerSubscriptionInFirebase(
+  lawyerId: string,
+  tier: 'free' | 'premium',
+  expiresAt: string | null,
+  activeCaseLimit: number | null
+): Promise<boolean> {
+  try {
+    // Try updating user_profiles or users collection
+    const profileRef = doc(db, 'user_profiles', lawyerId);
+    const userRef = doc(db, 'users', lawyerId);
+    const updates = {
+      subscriptionTier: tier,
+      subscriptionExpiresAt: expiresAt,
+      activeCaseLimit: activeCaseLimit
+    };
+
+    try {
+      await updateDoc(profileRef, updates);
+    } catch {
+      await setDoc(profileRef, updates, { merge: true });
+    }
+
+    try {
+      await updateDoc(userRef, updates);
+    } catch {
+      await setDoc(userRef, updates, { merge: true });
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Advokat obunasini yangilashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 29. Barcha to'lovlarni Firebase Firestore-dan olish
+ */
+export async function getPaymentsFromFirebase(lawyerId?: string): Promise<Payment[]> {
+  const path = 'payments';
+  try {
+    const q = query(collection(db, path), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    const payments: Payment[] = [];
+    snapshot.forEach((docSnap) => {
+      const p = docSnap.data() as Payment;
+      if (!lawyerId || p.lawyerId === lawyerId) {
+        payments.push(p);
+      }
+    });
+    return payments;
+  } catch (error) {
+    console.error("To'lovlarni Firestore-dan olishda xatolik:", error);
+    return [];
+  }
+}
+
 

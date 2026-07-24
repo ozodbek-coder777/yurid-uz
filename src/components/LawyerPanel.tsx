@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SubscriptionManagement from './SubscriptionManagement';
 import { 
   Search, 
   Filter, 
@@ -37,7 +38,9 @@ import {
   Download,
   FileDown,
   Newspaper,
-  Settings
+  Settings,
+  Sparkles,
+  CreditCard
 } from 'lucide-react';
 import { Submission, SubmissionStatus, UrgencyLevel, LawyerDetails, ClientReview } from '../types';
 import { 
@@ -438,8 +441,8 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
     return null;
   });
 
-  // Panel active tabs: 'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats'
-  const [activePanelTab, setActivePanelTab] = useState<'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats'>('submissions');
+  // Panel active tabs: 'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription'
+  const [activePanelTab, setActivePanelTab] = useState<'submissions' | 'lawyers' | 'stats' | 'profile' | 'settings' | 'police_reports' | 'blacklist' | 'witnesses' | 'chats' | 'subscription'>('submissions');
 
   const [features, setFeatures] = useState<any>({
     lawyerHiring: true,
@@ -1423,6 +1426,27 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           <span>{lang === 'ru' ? 'Независимые свидетели' : 'Holis guvohlar'}</span>
         </button>
         <button
+          onClick={() => setActivePanelTab('subscription')}
+          className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+            activePanelTab === 'subscription'
+              ? 'border-emerald-500 text-emerald-400 font-bold bg-emerald-500/10'
+              : 'border-transparent text-emerald-400/80 hover:text-emerald-300'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+          <span>{lang === 'ru' ? 'Премиум подписка' : 'Premium Obuna'}</span>
+          {currentUser?.subscriptionTier === 'premium' ? (
+            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
+              PRO
+            </span>
+          ) : (
+            <span className="bg-amber-500/20 text-amber-300 text-[10px] px-2 py-0.5 rounded-full font-bold border border-amber-500/30">
+              FREE
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActivePanelTab('profile')}
           className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activePanelTab === 'profile'
@@ -1918,36 +1942,88 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
                   {/* Admin controls */}
                   {!isDefaultAdmin && (
-                    <div className="pt-2 flex gap-2">
-                      <button
-                        onClick={() => {
-                          const updated = lawyers.map(item => 
-                            item.id === l.id ? { ...item, isBlocked: !item.isBlocked } : item
-                          );
-                          setLawyers(updated);
-                          localStorage.setItem('lawyers_list', JSON.stringify(updated));
-                        }}
-                        className={`flex-1 text-[11px] font-semibold py-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                          l.isBlocked 
-                            ? 'bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-400 border-emerald-500/20' 
-                            : 'bg-rose-500/10 hover:bg-rose-500/15 text-rose-400 border-rose-500/20'
-                        }`}
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        <span>{l.isBlocked ? "Faollashtirish" : "Bloklash"}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          if (!window.confirm(lang === 'ru' ? "Удалить этого адвоката?" : "Ushbu advokatni o'chirib tashlamoqchimisiz?")) return;
-                          const updated = lawyers.filter(item => item.id !== l.id);
-                          setLawyers(updated);
-                          localStorage.setItem('lawyers_list', JSON.stringify(updated));
-                        }}
-                        className="bg-gray-800 hover:bg-rose-950/40 hover:text-rose-400 border border-gray-700/60 text-gray-300 font-semibold px-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-center"
-                        title={lang === 'ru' ? "Удалить" : "O'chirish"}
-                      >
-                        <UserMinus className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="pt-2 space-y-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            const newTier = l.subscriptionTier === 'premium' ? 'free' : 'premium';
+                            const action = newTier === 'premium' ? 'activate' : 'deactivate';
+                            
+                            try {
+                              const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/subscription`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action, days: 30 })
+                              });
+                              const data = await res.json();
+
+                              const updatedExpiresAt = data.subscriptionExpiresAt || (newTier === 'premium' ? new Date(Date.now() + 30*86400000).toISOString() : null);
+
+                              const updated = lawyers.map(item => 
+                                item.id === l.id ? { 
+                                  ...item, 
+                                  subscriptionTier: newTier, 
+                                  subscriptionExpiresAt: updatedExpiresAt,
+                                  activeCaseLimit: newTier === 'premium' ? null : 10
+                                } : item
+                              );
+                              setLawyers(updated);
+                              localStorage.setItem('lawyers_list', JSON.stringify(updated));
+
+                              alert(newTier === 'premium' 
+                                ? `"${l.name}" uchun 30 kunga Premium obuna yoqildi! ⭐` 
+                                : `"${l.name}" uchun Premium obuna o'chirildi (Free).`
+                              );
+                            } catch (e) {
+                              alert("Xatolik yuz berdi.");
+                            }
+                          }}
+                          className={`w-full text-[11px] font-bold py-1.5 px-3 rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                            l.subscriptionTier === 'premium'
+                              ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border-amber-500/30'
+                              : 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>
+                            {l.subscriptionTier === 'premium' 
+                              ? "⭐ Premium O'chirish (Free ga tushirish)" 
+                              : "⭐ Premium Yoqish (30 kun)"}
+                          </span>
+                        </button>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const updated = lawyers.map(item => 
+                              item.id === l.id ? { ...item, isBlocked: !item.isBlocked } : item
+                            );
+                            setLawyers(updated);
+                            localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                          }}
+                          className={`flex-1 text-[11px] font-semibold py-2 rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                            l.isBlocked 
+                              ? 'bg-emerald-500/10 hover:bg-emerald-500/15 text-emerald-400 border-emerald-500/20' 
+                              : 'bg-rose-500/10 hover:bg-rose-500/15 text-rose-400 border-rose-500/20'
+                          }`}
+                        >
+                          <Ban className="w-3.5 h-3.5" />
+                          <span>{l.isBlocked ? "Faollashtirish" : "Bloklash"}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (!window.confirm(lang === 'ru' ? "Удалить этого адвоката?" : "Ushbu advokatni o'chirib tashlamoqchimisiz?")) return;
+                            const updated = lawyers.filter(item => item.id !== l.id);
+                            setLawyers(updated);
+                            localStorage.setItem('lawyers_list', JSON.stringify(updated));
+                          }}
+                          className="bg-gray-800 hover:bg-rose-950/40 hover:text-rose-400 border border-gray-700/60 text-gray-300 font-semibold px-2.5 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                          title={lang === 'ru' ? "Удалить" : "O'chirish"}
+                        >
+                          <UserMinus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2495,6 +2571,19 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Subscription Management Tab */}
+      {activePanelTab === 'subscription' && (
+        <SubscriptionManagement 
+          currentUser={currentUser} 
+          onUserUpdate={setCurrentUser} 
+          lang={lang} 
+          activeCasesCount={submissions.filter(s => 
+            (s.assignedLawyer === currentUser?.name || s.assignedLawyerId === currentUser?.id) &&
+            s.status !== 'YAKUNLANDI' && s.status !== 'RAD_ETILGAN' && s.status !== 'TUGALLANGAN'
+          ).length}
+        />
       )}
 
       {/* 4. ARIZA TAFSILOTI: Beautiful Modal View overlay */}

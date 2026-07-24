@@ -103,9 +103,53 @@
         },
         "sana": {
           "type": "string"
+        },
+        "subscriptionTier": {
+          "type": "string",
+          "enum": ["free", "premium"]
+        },
+        "subscriptionExpiresAt": {
+          "type": "string"
+        },
+        "activeCaseLimit": {
+          "type": "number"
         }
       },
       "required": ["id", "ism", "email"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "A subscription payment document for Payme/Click integrations",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "lawyerId": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["payme", "click"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "completed", "failed"]
+        },
+        "transactionId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "completedAt": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "lawyerId", "amount", "provider", "status", "transactionId", "createdAt"]
     },
     "FeatureSettings": {
       "title": "FeatureSettings",
@@ -144,6 +188,10 @@
     "settings": {
       "schema": "FeatureSettings",
       "description": "Feature toggles and app configurations"
+    },
+    "payments": {
+      "schema": "Payment",
+      "description": "Payment transactions for subscription plans"
     }
   }
 }

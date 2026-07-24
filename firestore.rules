@@ -47,6 +47,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Payments collection for Payme / Click subscription payments
+    match /payments/{paymentId} {
+      allow create, read, update, delete: if true;
+    }
+
     // Default catch-all rules
     match /{document=**} {
       allow read, write: if true;

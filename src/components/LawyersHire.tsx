@@ -590,26 +590,35 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
   // Get unique specializations list
   const specializations = ['ALL', 'Avtohalokat', 'Mehnat', 'Oilaviy', 'Jinoyat', 'Mulk', 'Biznes', 'Migratsiya', 'Fuqarolik'];
 
-  // Filtered Lawyers
-  const filteredLawyers = lawyers.filter(l => {
-    // Hide admin and blocked lawyers
-    if (l.id === 'admin' || l.role === 'admin' || l.isBlocked) {
-      return false;
-    }
+  // Filtered and Sorted Lawyers (Premium lawyers appear FIRST)
+  const filteredLawyers = lawyers
+    .filter(l => {
+      // Hide admin and blocked lawyers
+      if (l.id === 'admin' || l.role === 'admin' || l.isBlocked) {
+        return false;
+      }
 
-    const matchesSearch = l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          l.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          l.address.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesSpec = specFilter === 'ALL' || l.specialization.includes(specFilter);
-    
-    let matchesRating = true;
-    if (ratingFilter === '4.8') matchesRating = l.rating >= 4.8;
-    else if (ratingFilter === '4.7') matchesRating = l.rating >= 4.7;
-    else if (ratingFilter === '4.5') matchesRating = l.rating >= 4.5;
+      const matchesSearch = l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            l.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            l.address.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesSpec = specFilter === 'ALL' || l.specialization.includes(specFilter);
+      
+      let matchesRating = true;
+      if (ratingFilter === '4.8') matchesRating = l.rating >= 4.8;
+      else if (ratingFilter === '4.7') matchesRating = l.rating >= 4.7;
+      else if (ratingFilter === '4.5') matchesRating = l.rating >= 4.5;
 
-    return matchesSearch && matchesSpec && matchesRating;
-  });
+      return matchesSearch && matchesSpec && matchesRating;
+    })
+    .sort((a, b) => {
+      const aIsPremium = a.subscriptionTier === 'premium' ? 1 : 0;
+      const bIsPremium = b.subscriptionTier === 'premium' ? 1 : 0;
+      if (bIsPremium !== aIsPremium) {
+        return bIsPremium - aIsPremium; // Premium subscribers first
+      }
+      return b.rating - a.rating;
+    });
 
   if (submittedAppInfo) {
     return (
@@ -849,8 +858,13 @@ export default function LawyersHire({ lang }: LawyersHireProps) {
                {/* Header profile info */}
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <h3 className="font-sans font-bold text-white group-hover:text-teal-400 transition-colors text-base">{lawyer.name}</h3>
+                    {lawyer.subscriptionTier === 'premium' && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-xs">
+                        <Sparkles className="w-2.5 h-2.5 text-amber-400" /> PREMIUM
+                      </span>
+                    )}
                     {(() => {
                       const tierInfo = getLawyerRatingTier(lawyer.rating, lang);
                       return (
