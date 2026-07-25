@@ -22,7 +22,14 @@ import { LawyerDetails, ClientReview } from '../types';
 import { getBlacklistedUser } from '../utils/blacklist';
 import { getLawyerRatingTier } from '../utils/ratingHelper';
 import { sendSmsCode } from '../lib/firebase';
-import { saveApplicationToFirebase, getNextApplicationNumber } from '../utils/firebaseHelper';
+import { 
+  saveApplicationToFirebase, 
+  getNextApplicationNumber,
+  saveLawyerReviewToFirebase,
+  getLawyerReviewsFromFirebase,
+  saveLawyersToFirebase,
+  getLawyersFromFirebase
+} from '../utils/firebaseHelper';
 import MultiStepHireForm from './MultiStepHireForm';
 
 interface LawyersHireProps {
@@ -299,6 +306,91 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
   const [reviewName, setReviewName] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
+  const [reviewSuccessLawyerId, setReviewSuccessLawyerId] = useState<string | null>(null);
+
+  // Sync reviews and lawyers from Firestore on mount
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchFromFirebase() {
+      try {
+        const [fbReviews, fbLawyers] = await Promise.all([
+          getLawyerReviewsFromFirebase(),
+          getLawyersFromFirebase()
+        ]);
+
+        if (!isMounted) return;
+
+        const latestSaved = localStorage.getItem('lawyers_list');
+        let currentList = lawyers;
+        if (latestSaved) {
+          try {
+            const parsed = JSON.parse(latestSaved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              currentList = parsed;
+            }
+          } catch (e) {}
+        }
+
+        if (fbLawyers && fbLawyers.length > 0) {
+          // Merge fbLawyers into currentList
+          fbLawyers.forEach(fbl => {
+            const idx = currentList.findIndex(l => l.id === fbl.id);
+            if (idx >= 0) {
+              const combinedReviews = [...(currentList[idx].reviews || []), ...(fbl.reviews || [])];
+              // Deduplicate reviews by id
+              const uniqueReviews = combinedReviews.reduce((acc: ClientReview[], rev) => {
+                if (!acc.some(r => r.id === rev.id)) {
+                  acc.push(rev);
+                }
+                return acc;
+              }, []);
+              currentList[idx] = recalculateRatings({
+                ...currentList[idx],
+                ...fbl,
+                reviews: uniqueReviews
+              }, uniqueReviews);
+            }
+          });
+        }
+
+        if (fbReviews && fbReviews.length > 0) {
+          // Attach reviews from lawyer_reviews collection
+          currentList = currentList.map(l => {
+            const lFbReviews = fbReviews.filter(r => r.lawyerId === l.id);
+            if (lFbReviews.length > 0) {
+              const existing = l.reviews || [];
+              const combined = [...existing, ...lFbReviews];
+              const unique = combined.reduce((acc: ClientReview[], rev) => {
+                if (!acc.some(r => r.id === rev.id)) {
+                  acc.push({
+                    id: rev.id,
+                    clientName: rev.clientName,
+                    rating: rev.rating,
+                    comment: rev.comment,
+                    createdAt: rev.createdAt
+                  });
+                }
+                return acc;
+              }, []);
+              return recalculateRatings(l, unique);
+            }
+            return l;
+          });
+        }
+
+        setLawyers(currentList);
+        localStorage.setItem('lawyers_list', JSON.stringify(currentList));
+      } catch (err) {
+        console.error("Error fetching lawyers/reviews from Firestore:", err);
+      }
+    }
+
+    fetchFromFirebase();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Contact State
   const [activeContactLawyer, setActiveContactLawyer] = useState<LawyerDetails | null>(null);
@@ -345,17 +437,22 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
   };
 
   // Handle Review Submit
-  const handleReviewSubmit = (lawyerId: string, e: React.FormEvent) => {
+  const handleReviewSubmit = async (lawyerId: string, e: React.FormEvent) => {
     e.preventDefault();
     if (!reviewName.trim() || !reviewComment.trim()) return;
 
     const newReview: ClientReview = {
       id: 'rev_' + Date.now(),
-      clientName: reviewName,
+      clientName: reviewName.trim(),
       rating: reviewRating,
-      comment: reviewComment,
+      comment: reviewComment.trim(),
       createdAt: new Date().toISOString().split('T')[0]
     };
+
+    // Save review to Firebase Firestore
+    saveLawyerReviewToFirebase(lawyerId, newReview).catch(err => {
+      console.error("Firestore review save error:", err);
+    });
 
     // Load fresh data directly from localStorage to prevent stale overwrites
     const latestSaved = localStorage.getItem('lawyers_list');
@@ -373,7 +470,9 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
 
     const updatedLawyers = currentLawyers.map(l => {
       if (l.id === lawyerId) {
-        const updatedReviews = [newReview, ...l.reviews];
+        const existingReviews = Array.isArray(l.reviews) ? l.reviews : [];
+        const filtered = existingReviews.filter(r => r.id !== newReview.id);
+        const updatedReviews = [newReview, ...filtered];
         return recalculateRatings(l, updatedReviews);
       }
       return l;
@@ -382,14 +481,23 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
     setLawyers(updatedLawyers);
     localStorage.setItem('lawyers_list', JSON.stringify(updatedLawyers));
 
+    // Save full updated lawyers array to Firebase Firestore
+    saveLawyersToFirebase(updatedLawyers).catch(err => {
+      console.error("Firestore lawyers save error:", err);
+    });
+
     // Dispatch custom event to notify other panels (such as admin panel)
     window.dispatchEvent(new Event('yurid_lawyers_updated'));
 
-    // Reset fields
-    setReviewName('');
-    setReviewRating(5);
+    // Reset input comment & keep section open
     setReviewComment('');
-    setActiveReviewLawyer(null);
+    setReviewRating(5);
+    setActiveReviewLawyer(lawyerId);
+    setReviewSuccessLawyerId(lawyerId);
+
+    setTimeout(() => {
+      setReviewSuccessLawyerId(null);
+    }, 4500);
   };
 
   // AI Recommendation Trigger
@@ -1035,11 +1143,22 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
 
               {/* Reviews subsection */}
               {activeReviewLawyer === lawyer.id && (
-                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-3 animate-fade-in text-xs max-h-56 overflow-y-auto">
-                  <h4 className="font-sans font-bold text-white border-b border-slate-800 pb-1.5">{t.review_title}</h4>
+                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 space-y-3 animate-fade-in text-xs max-h-72 overflow-y-auto">
+                  <h4 className="font-sans font-bold text-white border-b border-slate-800 pb-1.5 flex items-center justify-between">
+                    <span>{t.review_title}</span>
+                    <span className="text-[10px] text-teal-400 font-mono font-normal">({lawyer.reviews.length} {lang === 'ru' ? 'отзывов' : 'sharh'})</span>
+                  </h4>
                   
+                  {/* Success notification */}
+                  {reviewSuccessLawyerId === lawyer.id && (
+                    <div className="bg-emerald-500/15 border border-emerald-500/40 rounded-xl p-2.5 text-emerald-300 text-[11px] font-semibold flex items-center gap-2 animate-fade-in shadow-md">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>{lang === 'ru' ? "Ваш отзыв успешно сохранен и опубликован!" : "Sharhingiz muvaffaqiyatli saqlandi va e'lon qilindi!"}</span>
+                    </div>
+                  )}
+
                   {/* Review submit form */}
-                  <form onSubmit={(e) => handleReviewSubmit(lawyer.id, e)} className="space-y-2 bg-slate-900/40 p-2 rounded-lg border border-slate-800/50">
+                  <form onSubmit={(e) => handleReviewSubmit(lawyer.id, e)} className="space-y-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
                     <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
@@ -1047,20 +1166,20 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
                         onChange={(e) => setReviewName(e.target.value)}
                         placeholder={t.review_name}
                         required
-                        className="bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-[11px] text-gray-200"
+                        className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-200 focus:border-teal-500/50 focus:outline-none"
                       />
-                      <div className="flex items-center gap-1 justify-end">
+                      <div className="flex items-center gap-1.5 justify-end bg-slate-950 border border-slate-800 rounded-lg px-2 py-1">
                         <span className="text-[10px] text-gray-400">{t.review_rating}:</span>
                         <select
                           value={reviewRating}
                           onChange={(e) => setReviewRating(Number(e.target.value))}
-                          className="bg-slate-950 border border-slate-800 rounded-md px-1 py-0.5 text-[11px] text-yellow-400"
+                          className="bg-transparent font-bold text-[11px] text-yellow-400 focus:outline-none cursor-pointer"
                         >
-                          <option value="5">5 ⭐</option>
-                          <option value="4">4 ⭐</option>
-                          <option value="3">3 ⭐</option>
-                          <option value="2">2 ⭐</option>
-                          <option value="1">1 ⭐</option>
+                          <option value="5" className="bg-slate-900 text-yellow-400">5 ⭐⭐⭐⭐⭐</option>
+                          <option value="4" className="bg-slate-900 text-yellow-400">4 ⭐⭐⭐⭐</option>
+                          <option value="3" className="bg-slate-900 text-yellow-400">3 ⭐⭐⭐</option>
+                          <option value="2" className="bg-slate-900 text-yellow-400">2 ⭐⭐</option>
+                          <option value="1" className="bg-slate-900 text-yellow-400">1 ⭐</option>
                         </select>
                       </div>
                     </div>
@@ -1069,11 +1188,11 @@ export default function LawyersHire({ lang, onNavigateToTracking }: LawyersHireP
                       onChange={(e) => setReviewComment(e.target.value)}
                       placeholder={t.review_comment}
                       required
-                      className="w-full bg-slate-950 border border-slate-800 rounded-md p-1.5 text-[11px] text-gray-200 h-12 focus:outline-hidden"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-[11px] text-gray-200 h-14 focus:border-teal-500/50 focus:outline-none resize-none"
                     />
                     <button
                       type="submit"
-                      className="w-full py-1 bg-teal-600 hover:bg-teal-500 text-white font-semibold rounded-md text-[10px] transition-colors"
+                      className="w-full py-1.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold rounded-lg text-xs transition-all cursor-pointer shadow-md active:scale-98"
                     >
                       {t.review_submit}
                     </button>

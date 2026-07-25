@@ -1,4 +1,4 @@
-import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest, AuditLog, Article, EmergencyGuide } from '../types';
+import { Submission, RegisteredUser, PoliceReport, ChatRoom, Payment, PaymentRequest, AuditLog, Article, EmergencyGuide, LawyerDetails, ClientReview } from '../types';
 import { db, auth } from '../lib/firebase';
 import { 
   collection, 
@@ -859,6 +859,81 @@ export async function getEmergencyGuidesFromFirebase(): Promise<EmergencyGuide[]
     return [];
   }
 }
+
+/**
+ * 43. Advokat sharhlarini Firestore-da saqlash
+ */
+export async function saveLawyerReviewToFirebase(lawyerId: string, review: ClientReview): Promise<boolean> {
+  const path = 'lawyer_reviews';
+  try {
+    const reviewRef = doc(db, path, review.id);
+    await setDoc(reviewRef, {
+      ...review,
+      lawyerId,
+      createdAt: review.createdAt || new Date().toISOString().split('T')[0]
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error("Lawyer review saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 44. Barcha advokat sharhlarini Firestore-dan olish
+ */
+export async function getLawyerReviewsFromFirebase(): Promise<(ClientReview & { lawyerId: string })[]> {
+  const path = 'lawyer_reviews';
+  try {
+    const q = query(collection(db, path));
+    const snapshot = await getDocs(q);
+    const reviews: (ClientReview & { lawyerId: string })[] = [];
+    snapshot.forEach((docSnap) => {
+      reviews.push(docSnap.data() as (ClientReview & { lawyerId: string }));
+    });
+    return reviews;
+  } catch (error) {
+    console.error("Lawyer reviews olishda xatolik:", error);
+    return [];
+  }
+}
+
+/**
+ * 45. Advokatlar ro'yxatini va sharhlarini Firestore-da saqlash
+ */
+export async function saveLawyersToFirebase(lawyers: LawyerDetails[]): Promise<boolean> {
+  const path = 'lawyers';
+  try {
+    for (const lawyer of lawyers) {
+      const lawyerRef = doc(db, path, lawyer.id);
+      await setDoc(lawyerRef, lawyer, { merge: true });
+    }
+    return true;
+  } catch (error) {
+    console.error("Lawyers list saqlashda xatolik:", error);
+    return false;
+  }
+}
+
+/**
+ * 46. Advokatlar ro'yxatini Firestore-dan olish
+ */
+export async function getLawyersFromFirebase(): Promise<LawyerDetails[]> {
+  const path = 'lawyers';
+  try {
+    const q = query(collection(db, path));
+    const snapshot = await getDocs(q);
+    const list: LawyerDetails[] = [];
+    snapshot.forEach((docSnap) => {
+      list.push(docSnap.data() as LawyerDetails);
+    });
+    return list;
+  } catch (error) {
+    console.error("Lawyers list olishda xatolik:", error);
+    return [];
+  }
+}
+
 
 
 

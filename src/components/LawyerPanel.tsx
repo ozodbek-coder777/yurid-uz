@@ -461,6 +461,33 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
   });
 
   useEffect(() => {
+    const handleLawyersSync = () => {
+      const saved = localStorage.getItem('lawyers_list');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLawyers(parsed);
+          }
+        } catch (e) {
+          console.error("Sync lawyers in LawyerPanel failed", e);
+        }
+      }
+    };
+
+    window.addEventListener('yurid_lawyers_updated', handleLawyersSync);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'lawyers_list') {
+        handleLawyersSync();
+      }
+    });
+
+    return () => {
+      window.removeEventListener('yurid_lawyers_updated', handleLawyersSync);
+    };
+  }, []);
+
+  useEffect(() => {
     const unsubscribe = onSnapshotFeatureSettings((settings) => {
       if (settings) {
         setFeatures(settings);
