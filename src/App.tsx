@@ -84,6 +84,83 @@ export default function App() {
   useEffect(() => {
     // Redirection disabled
   }, [features, clientSubTab]);
+
+  // Real dynamic site statistics state (starts at 0, no fake numbers)
+  const [siteStats, setSiteStats] = useState({
+    processedCount: 0,
+    activeLawyersCount: 0,
+    successRate: '0%',
+    avgRating: '0.0'
+  });
+
+  useEffect(() => {
+    const calculateSiteStats = () => {
+      try {
+        const submissionsRaw = localStorage.getItem('submissions_list');
+        const lawyersRaw = localStorage.getItem('lawyers_list');
+
+        const submissions = submissionsRaw ? JSON.parse(submissionsRaw) : [];
+        const lawyers = lawyersRaw ? JSON.parse(lawyersRaw) : [];
+
+        // 1. Processed applications (strictly count actual submissions in database)
+        const processed = Array.isArray(submissions) ? submissions.length : 0;
+
+        // 2. Active lawyers (strictly count actual lawyers in system)
+        const activeLawyers = Array.isArray(lawyers) ? lawyers.length : 0;
+
+        // 3. Successful cases (percentage of completed applications, 0% if none)
+        let successPercent = '0%';
+        if (processed > 0 && Array.isArray(submissions)) {
+          const completed = submissions.filter((s: any) => 
+            s.status === 'YAKUNLANDI' || s.status === 'TUGALLANGAN' || s.status === 'yakunlandi' || s.status === 'QABUL_QILINGAN'
+          ).length;
+          successPercent = `${Math.round((completed / processed) * 100)}%`;
+        }
+
+        // 4. Average rating (calculated strictly from client reviews)
+        let totalRatingSum = 0;
+        let reviewCount = 0;
+        if (Array.isArray(lawyers)) {
+          lawyers.forEach((l: any) => {
+            if (Array.isArray(l.reviews) && l.reviews.length > 0) {
+              l.reviews.forEach((rev: any) => {
+                const rVal = Number(rev.rating);
+                if (!isNaN(rVal) && rVal > 0) {
+                  totalRatingSum += rVal;
+                  reviewCount++;
+                }
+              });
+            }
+          });
+        }
+
+        const ratingStr = reviewCount > 0 
+          ? (totalRatingSum / reviewCount).toFixed(1) 
+          : '0.0';
+
+        setSiteStats({
+          processedCount: processed,
+          activeLawyersCount: activeLawyers,
+          successRate: successPercent,
+          avgRating: ratingStr
+        });
+      } catch (e) {
+        console.error("Error calculating site stats:", e);
+      }
+    };
+
+    calculateSiteStats();
+
+    // Re-calculate whenever storage changes or lawyers/submissions update
+    const handleSync = () => calculateSiteStats();
+    window.addEventListener('yurid_lawyers_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+
+    return () => {
+      window.removeEventListener('yurid_lawyers_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, [clientSubTab, activeTab]);
   
   // Language selection state
   const [lang, setLang] = useState<'uz' | 'ru'>(() => {
@@ -638,7 +715,7 @@ export default function App() {
                   {clientSubTab === 'chatbot' 
                     ? t.client_sim_desc 
                     : clientSubTab === 'hire' 
-                      ? (lang === 'uz' ? 'Tizimimizdagi eng sara 4 ta professional advokatdan birini tanlang yoki AI yordamida o\'zingizga mos mutaxassisni aniqlang.' : 'Выберите одного из 4 лучших профессиональных адвокатов или определите подходящего специалиста с помощью ИИ.') 
+                      ? (lang === 'uz' ? 'Tizimimizdagi professional advokatlardan birini tanlang yoki AI yordamida o\'zingizga mos mutaxassisni aniqlang.' : 'Выберите одного из профессиональных адвокатов или определите подходящего специалиста с помощью ИИ.') 
                       : clientSubTab === 'police'
                         ? (lang === 'uz' ? 'IIV yoki Prokuratura idoralariga huquqbuzarlik, o\'g\'rilik, firibgarlik yoki yo\'l hodisasi bo\'yicha tahliliy ariza jo\'natish bo\'limi.' : 'Отдел отправки аналитического заявления в МВД или Прокуратуру по фактам правонарушений, краж, мошенничества или дорожных происшествий.')
                         : (lang === 'uz' ? 'Shaxsiy profilingiz, yuklangan hujjatlar, ariza topshirish tarixingiz va advokatlar bilan bog\'lanish ma\'lumotlari.' : 'Ваш профиль, загруженные документы, история отправленных заявлений и чатов с адвокатами.')}
@@ -654,7 +731,7 @@ export default function App() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 bg-[#0D1017] border border-[#1F2937] rounded-2xl text-center space-y-1">
                 <span className="block text-xl md:text-2xl font-extrabold text-blue-400 font-mono">
-                  {JSON.parse(localStorage.getItem('submissions_list') || '[]').length + 384}
+                  {siteStats.processedCount}
                 </span>
                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                   {lang === 'ru' ? 'Обработано обращений' : 'Murojaatlar qayta ishlandi'}
@@ -662,7 +739,7 @@ export default function App() {
               </div>
               <div className="p-4 bg-[#0D1017] border border-[#1F2937] rounded-2xl text-center space-y-1">
                 <span className="block text-xl md:text-2xl font-extrabold text-teal-400 font-mono">
-                  {JSON.parse(localStorage.getItem('lawyers_list') || '[]').length || 4}
+                  {siteStats.activeLawyersCount}
                 </span>
                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                   {lang === 'ru' ? 'Активных адвокатов' : 'Faol advokatlarimiz'}
@@ -670,7 +747,7 @@ export default function App() {
               </div>
               <div className="p-4 bg-[#0D1017] border border-[#1F2937] rounded-2xl text-center space-y-1">
                 <span className="block text-xl md:text-2xl font-extrabold text-emerald-400 font-mono">
-                  98.6%
+                  {siteStats.successRate}
                 </span>
                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                   {lang === 'ru' ? 'Успешных исходов' : 'Muvaffaqiyatli ishlar'}
@@ -678,7 +755,7 @@ export default function App() {
               </div>
               <div className="p-4 bg-[#0D1017] border border-[#1F2937] rounded-2xl text-center space-y-1">
                 <span className="block text-xl md:text-2xl font-extrabold text-amber-400 font-mono">
-                  ★ 4.93
+                  ★ {siteStats.avgRating}
                 </span>
                 <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
                   {lang === 'ru' ? 'Средний рейтинг' : 'O\'rtacha reytingimiz'}
