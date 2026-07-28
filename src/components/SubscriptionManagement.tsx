@@ -234,53 +234,49 @@ export default function SubscriptionManagement({
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const expiresAtIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // 1. INSTANT LOCAL STORAGE & STATE UPDATE
+    const localReqs = JSON.parse(localStorage.getItem('payment_requests') || '[]');
+    const rIdx = localReqs.findIndex((r: any) => r.id === req.id);
+    if (rIdx !== -1) {
+      localReqs[rIdx].status = 'approved';
+      localReqs[rIdx].reviewedAt = new Date().toISOString();
+      localReqs[rIdx].reviewedBy = currentUser?.fullName || 'superadmin';
+      localStorage.setItem('payment_requests', JSON.stringify(localReqs));
+    }
+
+    const savedList = JSON.parse(localStorage.getItem('lawyers_list') || '[]');
+    const lIdx = savedList.findIndex((l: any) => l.id === req.lawyerId || l.email === req.lawyerEmail);
+    if (lIdx !== -1) {
+      savedList[lIdx] = { ...savedList[lIdx], subscriptionTier: 'premium', subscriptionExpiresAt: expiresAtIso, activeCaseLimit: null };
+      localStorage.setItem('lawyers_list', JSON.stringify(savedList));
+    }
+
+    if (currentUser?.id === req.lawyerId || currentUser?.email === req.lawyerEmail) {
+      const updatedSelf = { ...currentUser, subscriptionTier: 'premium', subscriptionExpiresAt: expiresAtIso, activeCaseLimit: null };
+      localStorage.setItem('logged_in_lawyer', JSON.stringify(updatedSelf));
+      if (onUserUpdate) onUserUpdate(updatedSelf);
+    }
+
+    window.dispatchEvent(new Event('yurid_lawyers_updated'));
+
+    setSuccessMessage(`"${req.lawyerName}" uchun Premium obuna 30 kunga faollashtirildi!`);
+    setIsActionLoading(false);
+    loadRequests();
+
+    // 2. BACKGROUND NETWORK SYNC (non-blocking)
     try {
-      try {
-        await fetch(`/api/payment-requests/${req.id}/approve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reviewedBy: currentUser?.fullName || 'superadmin' })
-        });
-      } catch (e) {
-        console.warn("Backend approve failed, fallback:", e);
-      }
+      fetch(`/api/payment-requests/${req.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewedBy: currentUser?.fullName || 'superadmin' })
+      }).catch(() => {});
 
-      // Update Firebase status
-      await updatePaymentRequestStatusInFirebase(req.id, 'approved', currentUser?.fullName || 'superadmin').catch(() => {});
-
-      // Update Lawyer Subscription in Firestore & localStorage
-      const expiresAtIso = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      await updateLawyerSubscriptionInFirebase(req.lawyerId, 'premium', expiresAtIso, null).catch(() => {});
-
-      // Update local storage
-      const localReqs = JSON.parse(localStorage.getItem('payment_requests') || '[]');
-      const rIdx = localReqs.findIndex((r: any) => r.id === req.id);
-      if (rIdx !== -1) {
-        localReqs[rIdx].status = 'approved';
-        localReqs[rIdx].reviewedAt = new Date().toISOString();
-        localReqs[rIdx].reviewedBy = currentUser?.fullName || 'superadmin';
-        localStorage.setItem('payment_requests', JSON.stringify(localReqs));
-      }
-
-      const savedList = JSON.parse(localStorage.getItem('lawyers_list') || '[]');
-      const lIdx = savedList.findIndex((l: any) => l.id === req.lawyerId || l.email === req.lawyerEmail);
-      if (lIdx !== -1) {
-        savedList[lIdx] = { ...savedList[lIdx], subscriptionTier: 'premium', subscriptionExpiresAt: expiresAtIso, activeCaseLimit: null };
-        localStorage.setItem('lawyers_list', JSON.stringify(savedList));
-      }
-
-      if (currentUser?.id === req.lawyerId || currentUser?.email === req.lawyerEmail) {
-        const updatedSelf = { ...currentUser, subscriptionTier: 'premium', subscriptionExpiresAt: expiresAtIso, activeCaseLimit: null };
-        localStorage.setItem('logged_in_lawyer', JSON.stringify(updatedSelf));
-        if (onUserUpdate) onUserUpdate(updatedSelf);
-      }
-
-      setSuccessMessage(`"${req.lawyerName}" uchun Premium obuna 30 kunga faollashtirildi!`);
-      loadRequests();
-    } catch (err: any) {
-      setErrorMessage("Tasdiqlashda xatolik yuz berdi: " + err.message);
-    } finally {
-      setIsActionLoading(false);
+      updatePaymentRequestStatusInFirebase(req.id, 'approved', currentUser?.fullName || 'superadmin').catch(() => {});
+      updateLawyerSubscriptionInFirebase(req.lawyerId, 'premium', expiresAtIso, null).catch(() => {});
+    } catch (e) {
+      console.warn("Background approval sync error:", e);
     }
   };
 
@@ -295,39 +291,34 @@ export default function SubscriptionManagement({
     setIsActionLoading(true);
     const req = rejectModalReq;
 
+    // 1. INSTANT LOCAL UPDATE
+    const localReqs = JSON.parse(localStorage.getItem('payment_requests') || '[]');
+    const rIdx = localReqs.findIndex((r: any) => r.id === req.id);
+    if (rIdx !== -1) {
+      localReqs[rIdx].status = 'rejected';
+      localReqs[rIdx].rejectionReason = rejectionReasonInput.trim();
+      localReqs[rIdx].reviewedAt = new Date().toISOString();
+      localReqs[rIdx].reviewedBy = currentUser?.fullName || 'superadmin';
+      localStorage.setItem('payment_requests', JSON.stringify(localReqs));
+    }
+
+    setSuccessMessage(`"${req.lawyerName}" to'lov so'rovi rad etildi.`);
+    setRejectModalReq(null);
+    setRejectionReasonInput('');
+    setIsActionLoading(false);
+    loadRequests();
+
+    // 2. BACKGROUND NETWORK SYNC (non-blocking)
     try {
-      try {
-        await fetch(`/api/payment-requests/${req.id}/reject`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rejectionReason: rejectionReasonInput.trim(), reviewedBy: currentUser?.fullName || 'superadmin' })
-        });
-      } catch (e) {
-        console.warn("Backend reject failed, fallback:", e);
-      }
+      fetch(`/api/payment-requests/${req.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rejectionReason: rejectionReasonInput.trim(), reviewedBy: currentUser?.fullName || 'superadmin' })
+      }).catch(() => {});
 
-      // Firestore update
-      await updatePaymentRequestStatusInFirebase(req.id, 'rejected', currentUser?.fullName || 'superadmin', rejectionReasonInput.trim()).catch(() => {});
-
-      // Local storage update
-      const localReqs = JSON.parse(localStorage.getItem('payment_requests') || '[]');
-      const rIdx = localReqs.findIndex((r: any) => r.id === req.id);
-      if (rIdx !== -1) {
-        localReqs[rIdx].status = 'rejected';
-        localReqs[rIdx].rejectionReason = rejectionReasonInput.trim();
-        localReqs[rIdx].reviewedAt = new Date().toISOString();
-        localReqs[rIdx].reviewedBy = currentUser?.fullName || 'superadmin';
-        localStorage.setItem('payment_requests', JSON.stringify(localReqs));
-      }
-
-      setSuccessMessage(`"${req.lawyerName}" to'lov so'rovi rad etildi.`);
-      setRejectModalReq(null);
-      setRejectionReasonInput('');
-      loadRequests();
-    } catch (err: any) {
-      setErrorMessage("Rad etishda xatolik: " + err.message);
-    } finally {
-      setIsActionLoading(false);
+      updatePaymentRequestStatusInFirebase(req.id, 'rejected', currentUser?.fullName || 'superadmin', rejectionReasonInput.trim()).catch(() => {});
+    } catch (e) {
+      console.warn("Background rejection sync error:", e);
     }
   };
 
@@ -338,49 +329,46 @@ export default function SubscriptionManagement({
       return;
     }
 
-    setAdminActionLoading(true);
+    setIsActionLoading(true);
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    const subscriptionTier = action === 'activate' ? 'premium' : 'free';
+    const subscriptionExpiresAt = action === 'activate' ? new Date(Date.now() + days * 86400000).toISOString() : null;
+    const activeCaseLimit = action === 'activate' ? null : 10;
+
+    // 1. INSTANT LOCAL STORAGE AND USER PROFILE UPDATE
+    const savedList = JSON.parse(localStorage.getItem('lawyers_list') || '[]');
+    const index = savedList.findIndex((l: any) => l.id === targetLawyerId || l.email === targetLawyerId);
+    if (index !== -1) {
+      savedList[index] = { ...savedList[index], subscriptionTier, subscriptionExpiresAt, activeCaseLimit };
+      localStorage.setItem('lawyers_list', JSON.stringify(savedList));
+    }
+
+    if (currentUser?.id === targetLawyerId || currentUser?.email === targetLawyerId) {
+      const updatedSelf = { ...currentUser, subscriptionTier, subscriptionExpiresAt, activeCaseLimit };
+      localStorage.setItem('logged_in_lawyer', JSON.stringify(updatedSelf));
+      if (onUserUpdate) onUserUpdate(updatedSelf);
+    }
+
+    window.dispatchEvent(new Event('yurid_lawyers_updated'));
+
+    setSuccessMessage(action === 'activate' ? "Advokat hisobiga Premium obuna yoqildi!" : "Premium obuna o'chirildi (Free tarifga tushirildi).");
+    setIsActionLoading(false);
+    setAdminActionLoading(false);
+    setTimeout(() => setSuccessMessage(null), 7000);
+
+    // 2. BACKGROUND NETWORK SYNC
     try {
-      let data: any = {};
-      try {
-        const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(targetLawyerId)}/subscription`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action, days })
-        });
-        const text = await res.text();
-        data = text ? JSON.parse(text) : {};
-      } catch (fErr) {
-        console.warn("Backend fetch error, falling back to local update:", fErr);
-      }
+      fetch(`/api/admin/lawyers/${encodeURIComponent(targetLawyerId)}/subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, days })
+      }).catch(() => {});
 
-      const subscriptionTier = data.subscriptionTier || (action === 'activate' ? 'premium' : 'free');
-      const subscriptionExpiresAt = data.subscriptionExpiresAt || (action === 'activate' ? new Date(Date.now() + days*86400000).toISOString() : null);
-      const activeCaseLimit = action === 'activate' ? null : 10;
-
-      await updateLawyerSubscriptionInFirebase(targetLawyerId, subscriptionTier, subscriptionExpiresAt, activeCaseLimit).catch(() => {});
-
-      const savedList = JSON.parse(localStorage.getItem('lawyers_list') || '[]');
-      const index = savedList.findIndex((l: any) => l.id === targetLawyerId || l.email === targetLawyerId);
-      if (index !== -1) {
-        savedList[index] = { ...savedList[index], subscriptionTier, subscriptionExpiresAt, activeCaseLimit };
-        localStorage.setItem('lawyers_list', JSON.stringify(savedList));
-      }
-
-      if (currentUser?.id === targetLawyerId || currentUser?.email === targetLawyerId) {
-        const updatedSelf = { ...currentUser, subscriptionTier, subscriptionExpiresAt, activeCaseLimit };
-        localStorage.setItem('logged_in_lawyer', JSON.stringify(updatedSelf));
-        if (onUserUpdate) onUserUpdate(updatedSelf);
-      }
-
-      setSuccessMessage(data.message || (action === 'activate' ? "Advokat hisobiga Premium obuna yoqildi!" : "Premium obuna o'chirildi (Free tarifga tushirildi)."));
-      setTimeout(() => setSuccessMessage(null), 7000);
-    } catch (err: any) {
-      setErrorMessage(err.message || "Amalni bajarishda xatolik.");
-    } finally {
-      setAdminActionLoading(false);
+      updateLawyerSubscriptionInFirebase(targetLawyerId, subscriptionTier, subscriptionExpiresAt, activeCaseLimit).catch(() => {});
+    } catch (e) {
+      console.warn("Background subscription toggle sync error:", e);
     }
   };
 

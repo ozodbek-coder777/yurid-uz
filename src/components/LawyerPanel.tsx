@@ -2115,52 +2115,55 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
                       <div className="flex gap-2">
                         <button
-                          onClick={async () => {
+                          onClick={() => {
                             const newTier = l.subscriptionTier === 'premium' ? 'free' : 'premium';
                             const action = newTier === 'premium' ? 'activate' : 'deactivate';
-                            
-                            try {
-                              let data: any = {};
-                              try {
-                                const res = await fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/subscription`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ action, days: 30 })
-                                });
-                                const text = await res.text();
-                                data = text ? JSON.parse(text) : {};
-                              } catch (fErr) {
-                                console.warn("Fetch error, updating locally and in Firebase:", fErr);
-                              }
+                            const updatedExpiresAt = newTier === 'premium' ? new Date(Date.now() + 30 * 86400000).toISOString() : null;
 
-                              const updatedExpiresAt = data.subscriptionExpiresAt || (newTier === 'premium' ? new Date(Date.now() + 30*86400000).toISOString() : null);
+                            // 1. INSTANT LOCAL STATE & LOCALSTORAGE UPDATE
+                            const updated = lawyers.map(item => 
+                              item.id === l.id ? { 
+                                ...item, 
+                                subscriptionTier: newTier, 
+                                subscriptionExpiresAt: updatedExpiresAt,
+                                activeCaseLimit: newTier === 'premium' ? null : 10
+                              } : item
+                            );
+                            setLawyers(updated);
+                            localStorage.setItem('lawyers_list', JSON.stringify(updated));
 
-                              // Update in Firebase
-                              await updateLawyerSubscriptionInFirebase(
-                                l.id,
-                                newTier,
-                                updatedExpiresAt,
-                                newTier === 'premium' ? null : 10
-                              ).catch(() => {});
-
-                              const updated = lawyers.map(item => 
-                                item.id === l.id ? { 
-                                  ...item, 
-                                  subscriptionTier: newTier, 
-                                  subscriptionExpiresAt: updatedExpiresAt,
-                                  activeCaseLimit: newTier === 'premium' ? null : 10
-                                } : item
-                              );
-                              setLawyers(updated);
-                              localStorage.setItem('lawyers_list', JSON.stringify(updated));
-
-                              alert(newTier === 'premium' 
-                                ? `"${l.name}" uchun 30 kunga Premium obuna yoqildi! ⭐` 
-                                : `"${l.name}" uchun Premium obuna o'chirildi (Free).`
-                              );
-                            } catch (e) {
-                              alert("Xatolik yuz berdi.");
+                            if (currentUser && (currentUser.id === l.id || currentUser.email === l.email)) {
+                              const updatedUser = {
+                                ...currentUser,
+                                subscriptionTier: newTier,
+                                subscriptionExpiresAt: updatedExpiresAt,
+                                activeCaseLimit: newTier === 'premium' ? null : 10
+                              };
+                              localStorage.setItem('logged_in_lawyer', JSON.stringify(updatedUser));
+                              setCurrentUser(updatedUser);
                             }
+
+                            window.dispatchEvent(new Event('yurid_lawyers_updated'));
+
+                            // 2. INSTANT USER FEEDBACK
+                            alert(newTier === 'premium' 
+                              ? `"${l.name}" uchun 30 kunga Premium obuna yoqildi! ⭐` 
+                              : `"${l.name}" uchun Premium obuna o'chirildi (Free).`
+                            );
+
+                            // 3. BACKGROUND SYNC (non-blocking)
+                            fetch(`/api/admin/lawyers/${encodeURIComponent(l.id)}/subscription`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ action, days: 30 })
+                            }).catch(() => {});
+
+                            updateLawyerSubscriptionInFirebase(
+                              l.id,
+                              newTier,
+                              updatedExpiresAt,
+                              newTier === 'premium' ? null : 10
+                            ).catch(() => {});
                           }}
                           className={`w-full text-[11px] font-bold py-1.5 px-3 rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                             l.subscriptionTier === 'premium'

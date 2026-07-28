@@ -578,7 +578,6 @@ export async function updateLawyerSubscriptionInFirebase(
   activeCaseLimit: number | null
 ): Promise<boolean> {
   try {
-    // Try updating user_profiles or users collection
     const profileRef = doc(db, 'user_profiles', lawyerId);
     const userRef = doc(db, 'users', lawyerId);
     const updates = {
@@ -587,18 +586,14 @@ export async function updateLawyerSubscriptionInFirebase(
       activeCaseLimit: activeCaseLimit
     };
 
-    try {
-      await updateDoc(profileRef, updates);
-    } catch {
-      await setDoc(profileRef, updates, { merge: true });
-    }
+    const savePromise = Promise.allSettled([
+      setDoc(profileRef, updates, { merge: true }),
+      setDoc(userRef, updates, { merge: true })
+    ]);
 
-    try {
-      await updateDoc(userRef, updates);
-    } catch {
-      await setDoc(userRef, updates, { merge: true });
-    }
-
+    // Fast resolution: don't block UI if Firestore connection is slow
+    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 800));
+    await Promise.race([savePromise, timeoutPromise]);
     return true;
   } catch (error) {
     console.error("Advokat obunasini yangilashda xatolik:", error);

@@ -1148,19 +1148,17 @@ app.post("/api/payments/verify-simulated", async (req, res) => {
 
   const { firestoreDb } = initFirebase();
   if (isFirestoreSupported && firestoreDb) {
-    try {
-      const userRef = doc(firestoreDb, "users", lawyerId);
-      const profileRef = doc(firestoreDb, "user_profiles", lawyerId);
-      const subUpdates = {
-        subscriptionTier: "premium",
-        subscriptionExpiresAt: expiresAt,
-        activeCaseLimit: null
-      };
-      await setDoc(userRef, subUpdates, { merge: true }).catch(() => {});
-      await setDoc(profileRef, subUpdates, { merge: true }).catch(() => {});
-    } catch (e) {
-      console.error("Firebase subscription update error:", e);
-    }
+    const userRef = doc(firestoreDb, "users", lawyerId);
+    const profileRef = doc(firestoreDb, "user_profiles", lawyerId);
+    const subUpdates = {
+      subscriptionTier: "premium",
+      subscriptionExpiresAt: expiresAt,
+      activeCaseLimit: null
+    };
+    Promise.allSettled([
+      setDoc(userRef, subUpdates, { merge: true }),
+      setDoc(profileRef, subUpdates, { merge: true })
+    ]).catch(e => console.error("Firebase subscription update error:", e));
   }
 
   return res.json({
@@ -1296,7 +1294,7 @@ app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
       { days, expiresAt, subscriptionTier }
     ).catch(() => {});
 
-    // Update in Firestore if available
+    // Update in Firestore asynchronously in background
     try {
       const { firestoreDb } = initFirebase();
       if (isFirestoreSupported && firestoreDb) {
@@ -1307,8 +1305,10 @@ app.post("/api/admin/lawyers/:id/subscription", async (req, res) => {
           subscriptionExpiresAt: expiresAt,
           activeCaseLimit
         };
-        await setDoc(userRef, subUpdates, { merge: true }).catch(() => {});
-        await setDoc(profileRef, subUpdates, { merge: true }).catch(() => {});
+        Promise.allSettled([
+          setDoc(userRef, subUpdates, { merge: true }),
+          setDoc(profileRef, subUpdates, { merge: true })
+        ]).catch(e => console.error("Firebase admin sub update error:", e));
       }
     } catch (e) {
       console.error("Firebase admin subscription update error:", e);
