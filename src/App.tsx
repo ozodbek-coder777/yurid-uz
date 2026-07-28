@@ -66,7 +66,7 @@ export default function App() {
 
   const [features, setFeatures] = useState<any>({
     lawyerHiring: true,
-    policeComplaint: true,
+    policeComplaint: false,
     witnesses: true,
     news: true
   });
@@ -787,19 +787,6 @@ export default function App() {
                 >
                   <Scale className="w-4 h-4" />
                   {lang === 'uz' ? 'Advokat Yollash' : 'Нанять Адвоката'}
-                </button>
-              )}
-              {features.policeComplaint && (
-                <button
-                  onClick={() => setClientSubTab('police')}
-                  className={`pb-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer flex items-center gap-2 shrink-0 ${
-                    clientSubTab === 'police'
-                      ? 'border-red-500 text-red-400 font-bold'
-                      : 'border-transparent text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Shield className="w-4 h-4" />
-                  {lang === 'uz' ? 'Ichki Ishlarga Xabar' : 'Сообщить в Органы'}
                 </button>
               )}
               <button

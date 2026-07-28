@@ -455,7 +455,7 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
 
   const [features, setFeatures] = useState<any>({
     lawyerHiring: true,
-    policeComplaint: true,
+    policeComplaint: false,
     witnesses: true,
     news: true
   });
@@ -1409,19 +1409,6 @@ export default function LawyerPanel({ refreshTrigger, lang }: LawyerPanelProps) 
           >
             <Newspaper className="w-4 h-4 text-amber-400" />
             <span>{lang === 'ru' ? 'Управление новостями' : 'Yangiliklar boshqaruvi'}</span>
-          </button>
-        )}
-        {currentUser?.role === 'admin' && (
-          <button
-            onClick={() => setActivePanelTab('police_reports')}
-            className={`px-5 py-3 text-xs md:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activePanelTab === 'police_reports'
-                ? 'border-blue-500 text-blue-400 font-bold bg-blue-500/5'
-                : 'border-transparent text-gray-400 hover:text-white'
-            }`}
-          >
-            <Shield className="w-4 h-4 text-rose-500" />
-            <span>{lang === 'ru' ? 'Сообщения в органы' : 'Ichki Ishlar xabarlari'}</span>
           </button>
         )}
         {currentUser && (
